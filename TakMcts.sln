@@ -1,0 +1,43 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31914.159
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tak.Core", "src\Tak.Core\Tak.Core.csproj", "{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tak.AI", "src\Tak.AI\Tak.AI.csproj", "{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tak.Experiments", "src\Tak.Experiments\Tak.Experiments.csproj", "{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tak.UI", "src\Tak.UI\Tak.UI.csproj", "{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tak.Tests", "tests\Tak.Tests\Tak.Tests.csproj", "{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D9C8E5A-8F7F-4E3B-A6F4-9B0C1D2E3F4E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
