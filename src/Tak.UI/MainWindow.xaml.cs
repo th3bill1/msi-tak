@@ -1,218 +1,201 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
-using Tak.Core;
 using Tak.AI;
+using Tak.Core;
 using Tak.Experiments;
 
 namespace Tak.UI;
 
 public partial class MainWindow : Window
 {
+    private enum MoveBuilderMode
+    {
+        Placement,
+        Slide
+    }
+
+    private const int DefaultAiIterationLimit = 500;
+
     private GameState? gameState;
     private Player humanPlayer = Player.White;
     private IAgent? aiAgent;
     private Button[,]? boardButtons;
-    private Stack<GameState> stateHistory = new();
+    private readonly List<GameState> stateTimeline = new();
+    private int stateIndex = -1;
+    private bool suppressUiEvents;
+    private bool aiTurnInProgress;
+    private Position? selectedSlideSource;
 
     public MainWindow()
     {
+        suppressUiEvents = true;
         InitializeComponent();
+        suppressUiEvents = false;
+        UpdateMoveBuilderMode();
+        UpdateStaticUi();
     }
+
+    private GameState? CurrentState => stateIndex >= 0 && stateIndex < stateTimeline.Count ? stateTimeline[stateIndex] : null;
+
+    private bool IsLiveState => CurrentState != null && stateIndex == stateTimeline.Count - 1;
+
+    private bool IsLiveHumanTurn => CurrentState != null && IsLiveState && CurrentState.Result == null && CurrentState.CurrentPlayer == humanPlayer;
 
     private void NewGameBtn_Click(object sender, RoutedEventArgs e)
     {
-        int boardSize = BoardSizeCombo.SelectedIndex switch
-        {
-            0 => 4,
-            1 => 5,
-            2 => 6,
-            _ => 5
-        };
-
-        humanPlayer = PlayerColorCombo.SelectedIndex == 0 ? Player.White : Player.Black;
-
-        string opponentName = OpponentCombo.SelectedIndex switch
-        {
-            0 => "random",
-            1 => "heuristic",
-            2 => "uct",
-            3 => "rave",
-            4 => "pw",
-            _ => "heuristic"
-        };
-
-        aiAgent = AgentFactory.CreateAgent(opponentName, seed: 42);
-
-        gameState = Utils.CreateNewGame(boardSize);
-        stateHistory.Clear();
-        stateHistory.Push(gameState);
-
-        CreateBoardUI(boardSize);
-        UpdateBoardDisplay();
-        UpdateStatus();
+        StartNewGame();
+        _ = MaybePlayAiTurnAsync();
     }
 
-    private void CreateBoardUI(int size)
+    private void ReplayBtn_Click(object sender, RoutedEventArgs e)
     {
-        BoardGrid.Children.Clear();
-        BoardGrid.Columns = size;
-        BoardGrid.Rows = size;
-        BoardGrid.Width = BoardGrid.Height = Math.Min(500, 400 + size * 20);
-
-        boardButtons = new Button[size, size];
-
-        for (int r = 0; r < size; r++)
-        {
-            for (int c = 0; c < size; c++)
-            {
-                var btn = new Button
-                {
-                    Content = "",
-                    Background = Brushes.Beige,
-                    Margin = new Thickness(1),
-                    FontSize = 10,
-                    Tag = new Position(r, c)
-                };
-                btn.Click += BoardButton_Click;
-                BoardGrid.Children.Add(btn);
-                boardButtons[r, c] = btn;
-            }
-        }
+        StartNewGame();
+        _ = MaybePlayAiTurnAsync();
     }
 
-    private void UpdateBoardDisplay()
+    private void RestartBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (gameState == null || boardButtons == null)
-            return;
-
-        int size = gameState.Config.BoardSize;
-        for (int r = 0; r < size; r++)
-        {
-            for (int c = 0; c < size; c++)
-            {
-                var pos = new Position(r, c);
-                var stack = gameState.Board.GetStack(pos);
-                boardButtons[r, c].Content = FormatStackDisplay(stack);
-                boardButtons[r, c].Background = Brushes.Beige;
-            }
-        }
+        StartNewGame();
+        _ = MaybePlayAiTurnAsync();
     }
 
-    private string FormatStackDisplay(Stack stack)
+    private void ResumeBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (stack.IsEmpty) return "";
-        var topPiece = stack.TopPiece;
-        string type = topPiece.Type switch
-        {
-            PieceType.Flat => "F",
-            PieceType.Wall => "W",
-            PieceType.Capstone => "C",
-            _ => "?"
-        };
-        string owner = topPiece.Owner == Player.White ? "W" : "B";
-        return $"{owner}{type}" + (stack.Height > 1 ? $"\n×{stack.Height}" : "");
+        JumpToLiveState();
+        _ = MaybePlayAiTurnAsync();
     }
 
-    private void UpdateStatus()
+    private void LiveBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (gameState == null)
-        {
-            StatusText.Text = "No game in progress.";
-            return;
-        }
-
-        if (gameState.Result != null)
-        {
-            StatusText.Text = $"Game Over! {gameState.Result}";
-            CurrentPlayerText.Text = "-";
-            return;
-        }
-
-        CurrentPlayerText.Text = gameState.CurrentPlayer.ToString();
-        StatusText.Text = gameState.CurrentPlayer == humanPlayer ? "Your turn!" : "AI is thinking...";
-
-        if (gameState.CurrentPlayer != humanPlayer)
-        {
-            // AI move
-            if (aiAgent != null)
-            {
-                var move = aiAgent.ChooseMove(gameState, iterationLimit: 500);
-                gameState = gameState.MakeMove(move);
-                stateHistory.Push(gameState);
-                UpdateBoardDisplay();
-                UpdateStatus();
-                UpdateMoveHistory();
-            }
-        }
-    }
-
-    private void UpdateMoveHistory()
-    {
-        if (gameState == null) return;
-
-        MoveHistoryList.Items.Clear();
-        foreach (var move in gameState.MoveHistory)
-        {
-            MoveHistoryList.Items.Add(Utils.FormatMove(move));
-        }
-    }
-
-    private void BoardButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (gameState == null || gameState.Result != null)
-            return;
-
-        if (gameState.CurrentPlayer != humanPlayer)
-            return;
-
-        if (sender is not Button btn || btn.Tag is not Position pos)
-            return;
-
-        try
-        {
-            string pieceType = PieceTypeCombo.SelectedIndex switch
-            {
-                0 => "Flat",
-                1 => "Wall",
-                2 => "Capstone",
-                3 => "Move",
-                _ => "Flat"
-            };
-
-            if (pieceType == "Move")
-            {
-                // For now, simple move logic - can be enhanced
-                StatusText.Text = "Move functionality requires UI enhancement for direction/distribution selection.";
-                return;
-            }
-
-            if (!Enum.TryParse<PieceType>(pieceType, out var pType))
-                return;
-
-            var move = new PlaceMove(pos, pType);
-            gameState = gameState.MakeMove(move);
-            stateHistory.Push(gameState);
-            UpdateBoardDisplay();
-            UpdateStatus();
-            UpdateMoveHistory();
-        }
-        catch (Exception ex)
-        {
-            StatusText.Text = $"Invalid move: {ex.Message}";
-        }
+        JumpToLiveState();
+        _ = MaybePlayAiTurnAsync();
     }
 
     private void UndoBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (stateHistory.Count > 1)
+        if (stateIndex <= 0)
+            return;
+
+        stateIndex--;
+        selectedSlideSource = null;
+        RefreshUi();
+    }
+
+    private void RedoBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (stateIndex < stateTimeline.Count - 1)
         {
-            stateHistory.Pop(); // Remove current
-            gameState = stateHistory.Peek();
-            UpdateBoardDisplay();
-            UpdateStatus();
-            UpdateMoveHistory();
+            stateIndex++;
+            selectedSlideSource = null;
+            RefreshUi();
         }
+    }
+
+    private void MoveHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (suppressUiEvents)
+            return;
+
+        if (MoveHistoryList.SelectedIndex < 0)
+            return;
+
+        var targetStateIndex = MoveHistoryList.SelectedIndex + 1;
+        if (targetStateIndex < 0 || targetStateIndex >= stateTimeline.Count)
+            return;
+
+        stateIndex = targetStateIndex;
+        selectedSlideSource = null;
+        RefreshUi();
+    }
+
+    private void MoveModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (suppressUiEvents)
+            return;
+
+        if (GetMoveBuilderMode() == MoveBuilderMode.Placement)
+            selectedSlideSource = null;
+
+        UpdateMoveBuilderMode();
+        UpdateBoardDisplay();
+        UpdateStatusPanel();
+    }
+
+    private void PieceTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (suppressUiEvents)
+            return;
+
+        UpdateBoardDisplay();
+        UpdateStatusPanel();
+    }
+
+    private void SlideSelection_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (suppressUiEvents)
+            return;
+
+        UpdateBoardDisplay();
+        UpdateStatusPanel();
+    }
+
+    private void ClearSelectionBtn_Click(object sender, RoutedEventArgs e)
+    {
+        selectedSlideSource = null;
+        RefreshUi();
+    }
+
+    private async void SubmitMoveBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (!IsLiveHumanTurn || CurrentState == null)
+            return;
+
+        if (GetMoveBuilderMode() != MoveBuilderMode.Slide)
+            return;
+
+        var move = TryBuildSelectedSlideMove(CurrentState);
+        if (move == null)
+        {
+            StatusTextMessage("Select a legal source, direction, carry count, and drop pattern.");
+            return;
+        }
+
+        ExecuteMove(move);
+        await MaybePlayAiTurnAsync();
+    }
+
+    private async void BoardButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!IsLiveHumanTurn || CurrentState == null || sender is not Button button || button.Tag is not Position position)
+            return;
+
+        var legalMoves = GameRules.GetLegalMoves(CurrentState).ToList();
+
+        if (GetMoveBuilderMode() == MoveBuilderMode.Placement)
+        {
+            var pieceType = GetSelectedPlacementPieceType();
+            var move = legalMoves.OfType<PlaceMove>().FirstOrDefault(place => place.Position == position && place.PieceType == pieceType);
+            if (move == null)
+            {
+                StatusTextMessage("That placement is not currently legal.");
+                return;
+            }
+
+            ExecuteMove(move);
+            await MaybePlayAiTurnAsync();
+            return;
+        }
+
+        var legalSources = legalMoves.OfType<SlideMove>().Select(move => move.From).ToHashSet();
+        if (!legalSources.Contains(position))
+        {
+            StatusTextMessage("That stack cannot slide right now.");
+            return;
+        }
+
+        selectedSlideSource = selectedSlideSource.HasValue && selectedSlideSource.Value == position ? null : position;
+        RefreshUi();
     }
 }
