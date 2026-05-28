@@ -58,7 +58,7 @@ public partial class MainWindow
         return $"{placementCount} placement moves, {slideCount} slide moves";
     }
 
-    private static UIElement BuildStackContent(Stack stack)
+    private static UIElement BuildStackContent(Stack stack, Position position, bool legal, bool selected)
     {
         if (stack.IsEmpty)
         {
@@ -69,24 +69,57 @@ public partial class MainWindow
                 VerticalAlignment = VerticalAlignment.Center
             };
         }
+        // Visualize pieces as fixed-size rectangles 10x2 px stacked vertically, placed to the left of the text
+        var pieces = stack.GetPieces().ToList();
 
-        var panel = new StackPanel
+        // Container for stripes: fixed width to the left of the text
+        var stripesPanel = new StackPanel
         {
             Orientation = Orientation.Vertical,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            Width = 10,
+            Margin = new Thickness(0)
         };
 
-        panel.Children.Add(new TextBlock
+        // Render from top (top piece first) stacked vertically
+        var topFirst = pieces.TakeLast(pieces.Count).ToList();
+        topFirst.Reverse();
+
+        foreach (var piece in topFirst)
         {
-            Text = stack.Owner == Player.White ? "W" : "B",
-            FontSize = 15,
+            var rect = new Border
+            {
+                Width = 10,
+                Height = 2,
+                Background = piece.Owner == Player.White ? Brushes.White : Brushes.Black,
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(0.5),
+                Margin = new Thickness(0, 1, 0, 1)
+            };
+
+            stripesPanel.Children.Add(rect);
+        }
+
+        // Textual info placed to the right of the stripes (no background)
+        var overlay = new StackPanel
+        {
+            Orientation = Orientation.Vertical,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0)
+        };
+
+        overlay.Children.Add(new TextBlock
+        {
+            Text = stack.TopPiece.Owner == Player.White ? "W" : "B",
+            FontSize = 14,
             FontWeight = FontWeights.Bold,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Foreground = stack.Owner == Player.White ? Brushes.SlateGray : Brushes.White
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Foreground = BuildStackForeground(stack, position, legal, selected)
         });
 
-        panel.Children.Add(new TextBlock
+        overlay.Children.Add(new TextBlock
         {
             Text = stack.TopPiece.Type switch
             {
@@ -97,39 +130,57 @@ public partial class MainWindow
             },
             FontSize = 10,
             FontWeight = FontWeights.SemiBold,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Foreground = stack.Owner == Player.White ? Brushes.SlateGray : Brushes.White
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Foreground = BuildStackForeground(stack, position, legal, selected)
         });
 
-        panel.Children.Add(new TextBlock
+        overlay.Children.Add(new TextBlock
         {
             Text = $"H{stack.Height}",
             FontSize = 10,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Foreground = stack.Owner == Player.White ? Brushes.SlateGray : Brushes.White
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Foreground = BuildStackForeground(stack, position, legal, selected)
         });
 
-        return panel;
+        var parent = new Grid();
+        parent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        parent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        Grid.SetColumn(stripesPanel, 0);
+        Grid.SetColumn(overlay, 1);
+        parent.Children.Add(stripesPanel);
+        parent.Children.Add(overlay);
+        return parent;
     }
 
-    private static Brush BuildSquareBrush(Stack stack, bool legal, bool selected, bool lastMove)
+    private static Brush BuildSquareBrush(Stack stack, Position position, bool legal, bool selected, bool lastMove)
     {
+        // Chessboard base colors
+        var light = Color.FromRgb(240, 217, 181);
+        var dark = Color.FromRgb(181, 136, 99);
+        bool darkSquare = (position.Row + position.Col) % 2 == 1;
+
         if (selected)
             return new SolidColorBrush(Color.FromRgb(253, 230, 138));
 
-        if (lastMove)
-            return new SolidColorBrush(Color.FromRgb(254, 249, 195));
+        // base tile color
+        var baseColor = darkSquare ? dark : light;
 
-        if (stack.IsEmpty)
-            return legal ? new SolidColorBrush(Color.FromRgb(220, 252, 231)) : new SolidColorBrush(Color.FromRgb(241, 245, 249));
+        // if legal and empty, slightly tint the base color greenish
+        if (stack.IsEmpty && legal)
+        {
+            // blend base with a pale green
+            var green = Color.FromRgb(220, 252, 231);
+            return new SolidColorBrush(Color.FromRgb(
+                (byte)((baseColor.R + green.R) / 2),
+                (byte)((baseColor.G + green.G) / 2),
+                (byte)((baseColor.B + green.B) / 2)));
+        }
 
-        if (stack.Owner == Player.White)
-            return new SolidColorBrush(Color.FromRgb(248, 250, 252));
-
-        return new SolidColorBrush(Color.FromRgb(30, 41, 59));
+        return new SolidColorBrush(baseColor);
     }
 
-    private static Brush BuildSquareBorderBrush(Stack stack, bool legal, bool selected, bool lastMove)
+    private static Brush BuildSquareBorderBrush(Stack stack, Position position, bool legal, bool selected, bool lastMove)
     {
         if (selected)
             return new SolidColorBrush(Color.FromRgb(202, 138, 4));
@@ -143,15 +194,13 @@ public partial class MainWindow
         return stack.IsEmpty ? new SolidColorBrush(Color.FromRgb(203, 213, 225)) : new SolidColorBrush(Color.FromRgb(71, 85, 105));
     }
 
-    private static Brush BuildStackForeground(Stack stack, bool legal, bool selected)
+    private static Brush BuildStackForeground(Stack stack, Position position, bool legal, bool selected)
     {
-        if (selected)
+        // If the top piece is Black, text should be black; otherwise text should be white.
+        if (!stack.IsEmpty && stack.TopPiece.Owner == Player.Black)
             return Brushes.Black;
 
-        if (stack.IsEmpty)
-            return legal ? new SolidColorBrush(Color.FromRgb(22, 101, 52)) : new SolidColorBrush(Color.FromRgb(100, 116, 139));
-
-        return stack.Owner == Player.White ? new SolidColorBrush(Color.FromRgb(15, 23, 42)) : Brushes.White;
+        return Brushes.White;
     }
 
     private static string BuildSquareToolTip(Position position, Stack stack, bool legal)

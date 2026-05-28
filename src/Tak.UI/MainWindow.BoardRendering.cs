@@ -75,12 +75,13 @@ public partial class MainWindow
                     ? legalPlacementTargets.Contains(position)
                     : legalSlideSources.Contains(position);
 
-                button.IsEnabled = IsLiveHumanTurn && isLegalSquare;
-                button.Content = BuildStackContent(stack);
-                button.Background = BuildSquareBrush(stack, isLegalSquare, isSelectedSource, isLastMoveSquare);
-                button.BorderBrush = BuildSquareBorderBrush(stack, isLegalSquare, isSelectedSource, isLastMoveSquare);
+                button.IsEnabled = true;
+                button.IsHitTestVisible = IsLiveHumanTurn && isLegalSquare;
+                button.Content = BuildStackContent(stack, position, isLegalSquare, isSelectedSource);
+                button.Background = BuildSquareBrush(stack, position, isLegalSquare, isSelectedSource, isLastMoveSquare);
+                button.BorderBrush = BuildSquareBorderBrush(stack, position, isLegalSquare, isSelectedSource, isLastMoveSquare);
                 button.BorderThickness = new Thickness(isSelectedSource || isLastMoveSquare ? 3 : isLegalSquare ? 2 : 1);
-                button.Foreground = BuildStackForeground(stack, isLegalSquare, isSelectedSource);
+                button.Foreground = BuildStackForeground(stack, position, isLegalSquare, isSelectedSource);
                 button.ToolTip = BuildSquareToolTip(position, stack, isLegalSquare);
             }
         }
