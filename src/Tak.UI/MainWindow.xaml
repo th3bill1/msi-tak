@@ -76,8 +76,8 @@
                     BorderBrush="#CBD5E1"
                     BorderThickness="1">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
-                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1">
+                    <WrapPanel Orientation="Horizontal" ItemWidth="360" ItemHeight="Auto" HorizontalAlignment="Left">
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
                             <StackPanel>
                                 <TextBlock Text="Setup" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
                                 <Grid Margin="0,10,0,0">
@@ -126,7 +126,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,12,0,0">
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
                             <StackPanel>
                                 <TextBlock Text="Game Info" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
                                 <UniformGrid Columns="2" Margin="0,10,0,0">
@@ -170,7 +170,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,12,0,0">
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
                             <StackPanel>
                                 <TextBlock Text="Move Builder" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
 
@@ -235,7 +235,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,12,0,0">
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
                             <StackPanel>
                                 <TextBlock Text="Move Review" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
                                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
@@ -249,13 +249,13 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,12,0,0">
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
                             <StackPanel>
                                 <TextBlock Text="Legal Moves" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
                                 <TextBlock x:Name="LegalMovesText" Text="-" FontSize="12" Foreground="#334155" TextWrapping="Wrap" Margin="0,8,0,0" />
                             </StackPanel>
                         </Border>
-                    </StackPanel>
+                    </WrapPanel>
                 </ScrollViewer>
             </Border>
         </Grid>
@@ -264,7 +264,7 @@
                 Grid.RowSpan="2"
                 Background="#990F172A"
                 Visibility="Collapsed">
-            <Border Width="420"
+            <Border Width="336"
                     Padding="24"
                     CornerRadius="20"
                     Background="#FFFFFF"
