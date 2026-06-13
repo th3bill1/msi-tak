@@ -21,6 +21,7 @@ public class TournamentResultRecord
     public double SimulationsPerSecond { get; set; }
     public int Seed { get; set; }
     public int IterationLimit { get; set; }
+    public int? MoveTimeLimitMs { get; set; }
 }
 
 /// <summary>Tournament runner</summary>
@@ -31,16 +32,18 @@ public class Tournament
     private readonly IAgent agentB;
     private readonly int gamesPerSide;
     private readonly int iterationLimit;
+    private readonly TimeSpan? moveTimeLimit;
     private readonly int baseSeed;
     private readonly string outputPath;
 
-    public Tournament(GameConfig config, IAgent agentA, IAgent agentB, int gamesPerSide, int iterationLimit, int baseSeed, string outputPath)
+    public Tournament(GameConfig config, IAgent agentA, IAgent agentB, int gamesPerSide, int iterationLimit, TimeSpan? moveTimeLimit, int baseSeed, string outputPath)
     {
         this.config = config;
         this.agentA = agentA;
         this.agentB = agentB;
         this.gamesPerSide = gamesPerSide;
         this.iterationLimit = iterationLimit;
+        this.moveTimeLimit = moveTimeLimit;
         this.baseSeed = baseSeed;
         this.outputPath = outputPath;
     }
@@ -54,6 +57,7 @@ public class Tournament
         Console.WriteLine($"Starting tournament: {agentA.Name} vs {agentB.Name}");
         Console.WriteLine($"Configuration: {config}");
         Console.WriteLine($"Games: {gamesPerSide * 2}, Iterations: {iterationLimit}");
+        Console.WriteLine($"Move time limit: {FormatMoveTimeLimit(moveTimeLimit)}");
         Console.WriteLine();
 
         for (int game = 0; game < gamesPerSide * 2; game++)
@@ -96,6 +100,7 @@ public class Tournament
                 DurationMs = sw.ElapsedMilliseconds,
                 AverageMoveTimeMs = sw.ElapsedMilliseconds / (double)Math.Max(1, result.Moves.Count),
                 IterationLimit = iterationLimit,
+                MoveTimeLimitMs = moveTimeLimit.HasValue ? (int)moveTimeLimit.Value.TotalMilliseconds : null,
                 Seed = gameSeed
             };
 
@@ -139,11 +144,16 @@ public class Tournament
         while (state.Result == null)
         {
             var agent = state.CurrentPlayer == Player.White ? white : black;
-            var move = agent.ChooseMove(state, iterationLimit: iterationLimit);
+            var move = agent.ChooseMove(state, moveTimeLimit, iterationLimit);
             state = state.MakeMove(move);
         }
 
         return state.Result;
+    }
+
+    private static string FormatMoveTimeLimit(TimeSpan? limit)
+    {
+        return limit.HasValue ? $"{limit.Value.TotalMilliseconds:0}ms" : "none";
     }
 
     private void WriteResults(List<TournamentResultRecord> results, string path)

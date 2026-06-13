@@ -82,6 +82,28 @@ public record SlideMove(Position From, Position To, Direction Direction, int[] D
     /// <summary>Get the number of pieces moved</summary>
     public int PiecesCarried => Distribution.Sum();
 
+    public virtual bool Equals(SlideMove? other)
+    {
+        return other is not null
+            && From == other.From
+            && To == other.To
+            && Direction == other.Direction
+            && Distribution.SequenceEqual(other.Distribution);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(From);
+        hash.Add(To);
+        hash.Add(Direction);
+        foreach (var drop in Distribution)
+        {
+            hash.Add(drop);
+        }
+        return hash.ToHashCode();
+    }
+
     /// <summary>Validate that the drop distribution is valid for a given board size</summary>
     public bool IsValidDistribution(int boardSize)
     {

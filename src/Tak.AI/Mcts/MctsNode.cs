@@ -102,7 +102,7 @@ public class MctsNode
             return double.PositiveInfinity;
 
         double exploitation = node.Wins / node.Visits;
-        double exploration = c * Math.Sqrt(Math.Log(Visits) / node.Visits);
+        double exploration = c * Math.Sqrt(Math.Log(Math.Max(1, Visits)) / node.Visits);
         return exploitation + exploration;
     }
 

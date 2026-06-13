@@ -11,12 +11,12 @@ public class RaveMctsTree
 
     public RaveMctsTree(GameState initialState, double explorationConstant, int? seed = null)
     {
-        root = new RaveMctsNode(initialState);
+        root = new RaveMctsNode(initialState.Clone());
         random = seed.HasValue ? new Random(seed.Value) : new Random();
         this.explorationConstant = explorationConstant;
     }
 
-    public void RunIteration()
+    public void RunIteration(int maxRolloutMoves = 512)
     {
         // Selection: walk down using UCT+RAVE, recording the path of nodes visited
         // and the (move, player) pairs played along the way.
@@ -48,7 +48,7 @@ public class RaveMctsTree
 
         // Simulation: random rollout from `node`, also recording the moves played
         // so RAVE can update all-moves-as-first statistics.
-        var (terminalState, rolloutMoves) = Simulate(node);
+        var (terminalState, rolloutMoves) = Simulate(node, maxRolloutMoves);
         trajectory.AddRange(rolloutMoves);
 
         // Backpropagation with RAVE: walk the path, updating each node's Wins/Visits
@@ -58,12 +58,13 @@ public class RaveMctsTree
     }
 
     /// <summary>Random playout returning the terminal state and the list of moves played with the player who made each move.</summary>
-    private (GameState terminalState, List<(Move move, Player player)> moves) Simulate(RaveMctsNode node)
+    private (GameState terminalState, List<(Move move, Player player)> moves) Simulate(RaveMctsNode node, int maxRolloutMoves)
     {
         var state = node.State.Clone();
         var moves = new List<(Move, Player)>();
+        int depth = 0;
 
-        while (state.Result == null)
+        while (state.Result == null && depth < maxRolloutMoves)
         {
             var legal = GameRules.GetLegalMoves(state).ToList();
             if (legal.Count == 0) break;
@@ -72,6 +73,7 @@ public class RaveMctsTree
             var move = legal[random.Next(legal.Count)];
             moves.Add((move, mover));
             state = state.MakeMove(move);
+            depth++;
         }
 
         return (state, moves);
@@ -121,6 +123,11 @@ public class RaveMctsTree
         }
 
         return bestChild.Move;
+    }
+
+    public (int visits, double winRate) GetRootStats()
+    {
+        return (root.Visits, root.Wins / Math.Max(1, root.Visits));
     }
 }
 
@@ -210,7 +217,7 @@ public class RaveMctsNode
             return double.PositiveInfinity;
 
         double exploitation = node.Wins / node.Visits;
-        double exploration = c * Math.Sqrt(Math.Log(Visits) / node.Visits);
+        double exploration = c * Math.Sqrt(Math.Log(Math.Max(1, Visits)) / node.Visits);
         double uctValue = exploitation + exploration;
 
         if (raveStats != null && raveStats.TryGetValue(move, out var rave) && rave.RaveVisits > 0)

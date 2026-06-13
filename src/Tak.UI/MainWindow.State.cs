@@ -211,7 +211,7 @@ public partial class MainWindow
         try
         {
             HeaderStatusText.Text = $"{aiAgent.Name} is thinking...";
-            var move = await System.Threading.Tasks.Task.Run(() => aiAgent.ChooseMove(CurrentState.Clone(), iterationLimit: DefaultAiIterationLimit));
+            var move = await System.Threading.Tasks.Task.Run(() => aiAgent.ChooseMove(CurrentState.Clone(), DefaultAiTimeLimit, DefaultAiIterationLimit));
 
             if (CurrentState == null || !IsLiveState || CurrentState.Result != null || CurrentState.CurrentPlayer == humanPlayer)
                 return;

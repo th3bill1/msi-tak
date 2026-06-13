@@ -11,13 +11,13 @@ public class MctsTree
 
     public MctsTree(GameState initialState, double explorationConstant, int? seed = null)
     {
-        root = new MctsNode(initialState);
+        root = new MctsNode(initialState.Clone());
         random = seed.HasValue ? new Random(seed.Value) : new Random();
         this.explorationConstant = explorationConstant;
     }
 
     /// <summary>Run one MCTS iteration</summary>
-    public void RunIteration()
+    public void RunIteration(int maxRolloutMoves = 512)
     {
         // Selection
         var node = Selection(root);
@@ -35,7 +35,7 @@ public class MctsTree
         // If `node` is the root (no parent), there is no "last mover", so we evaluate from
         // the current player's perspective; root statistics aren't used for move selection anyway.
         Player mover = node.Parent?.State.CurrentPlayer ?? node.State.CurrentPlayer;
-        double reward = Simulation(node, mover);
+        double reward = Simulation(node, mover, maxRolloutMoves);
 
         // Backpropagation
         node.Backpropagate(reward);
@@ -55,11 +55,12 @@ public class MctsTree
     }
 
     /// <summary>Simulation phase - random playout from `node`, returning reward from `perspective`'s POV</summary>
-    private double Simulation(MctsNode node, Player perspective)
+    private double Simulation(MctsNode node, Player perspective, int maxRolloutMoves)
     {
         var state = node.State.Clone();
+        int depth = 0;
 
-        while (state.Result == null)
+        while (state.Result == null && depth < maxRolloutMoves)
         {
             var moves = GameRules.GetLegalMoves(state).ToList();
             if (moves.Count == 0)
@@ -67,6 +68,7 @@ public class MctsTree
 
             var move = moves[random.Next(moves.Count)];
             state = state.MakeMove(move);
+            depth++;
         }
 
         return EvaluateTerminalState(state, perspective);

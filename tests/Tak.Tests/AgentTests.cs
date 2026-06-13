@@ -2,6 +2,7 @@ using Xunit;
 using Tak.Core;
 using Tak.AI;
 using Tak.Experiments;
+using System.Diagnostics;
 
 namespace Tak.Tests;
 
@@ -97,7 +98,7 @@ public class AgentTests
     [Fact]
     public void RaveAgent_ReturnsLegalMove()
     {
-        var agent = new RaveAgent(seed: 42);
+        var agent = new RaveAgent(seed: 42) { ThrowOnInvalidMove = true };
         var game = Utils.CreateNewGame(4);
         
         var move = agent.ChooseMove(game, iterationLimit: 100);
@@ -105,6 +106,145 @@ public class AgentTests
         Assert.NotNull(move);
         var legalMoves = GameRules.GetLegalMoves(game).ToList();
         Assert.Contains(move, legalMoves);
+    }
+
+    [Fact]
+    public void SlideMove_EqualityUsesDistributionValues()
+    {
+        var moveA = new SlideMove(new Position(0, 0), new Position(0, 2), Direction.Right, new[] { 1, 1 });
+        var moveB = new SlideMove(new Position(0, 0), new Position(0, 2), Direction.Right, new[] { 1, 1 });
+
+        Assert.Equal(moveA, moveB);
+        Assert.Equal(moveA.GetHashCode(), moveB.GetHashCode());
+    }
+
+    [Fact]
+    public void RaveAgent_ChoosesImmediateRoadWin()
+    {
+        var game = CreateManualState(Player.White);
+        game.Board.PlacePiece(new Position(0, 0), new Piece(Player.White, PieceType.Flat));
+        game.Board.PlacePiece(new Position(0, 1), new Piece(Player.White, PieceType.Flat));
+        game.Board.PlacePiece(new Position(0, 2), new Piece(Player.White, PieceType.Flat));
+
+        var agent = new RaveAgent(seed: 42) { ThrowOnInvalidMove = true };
+        var move = agent.ChooseMove(game, iterationLimit: 1);
+
+        var place = Assert.IsType<PlaceMove>(move);
+        Assert.Equal(new Position(0, 3), place.Position);
+        Assert.Equal(PieceType.Flat, place.PieceType);
+        Assert.Equal("immediate-win", agent.LastDiagnostics?.SelectionReason);
+    }
+
+    [Fact]
+    public void RaveAgent_BlocksImmediateOpponentRoadWin()
+    {
+        var game = CreateManualState(Player.White);
+        game.Board.PlacePiece(new Position(0, 0), new Piece(Player.Black, PieceType.Flat));
+        game.Board.PlacePiece(new Position(0, 1), new Piece(Player.Black, PieceType.Flat));
+        game.Board.PlacePiece(new Position(0, 2), new Piece(Player.Black, PieceType.Flat));
+
+        var agent = new RaveAgent(seed: 42) { ThrowOnInvalidMove = true };
+        var move = agent.ChooseMove(game, iterationLimit: 1);
+
+        var place = Assert.IsType<PlaceMove>(move);
+        Assert.Equal(new Position(0, 3), place.Position);
+        Assert.Equal("immediate-block", agent.LastDiagnostics?.SelectionReason);
+    }
+
+    [Fact]
+    public void UctAgent_BlocksImmediateOpponentRoadWin()
+    {
+        var game = CreateManualState(Player.White);
+        game.Board.PlacePiece(new Position(0, 0), new Piece(Player.Black, PieceType.Flat));
+        game.Board.PlacePiece(new Position(0, 1), new Piece(Player.Black, PieceType.Flat));
+        game.Board.PlacePiece(new Position(0, 2), new Piece(Player.Black, PieceType.Flat));
+
+        var agent = new UctAgent(seed: 42);
+        var move = agent.ChooseMove(game, iterationLimit: 1);
+
+        var place = Assert.IsType<PlaceMove>(move);
+        Assert.Equal(new Position(0, 3), place.Position);
+    }
+
+    [Fact]
+    public void RaveAgent_DoesNotMutateInputState()
+    {
+        var agent = new RaveAgent(seed: 42) { ThrowOnInvalidMove = true };
+        var game = Utils.CreateNewGame(4);
+        var before = Snapshot(game);
+
+        var move = agent.ChooseMove(game, iterationLimit: 50);
+
+        Assert.Contains(move, GameRules.GetLegalMoves(game).ToList());
+        Assert.Equal(before, Snapshot(game));
+    }
+
+    [Fact]
+    public void RaveAgent_RespectsZeroTimeLimit()
+    {
+        var agent = new RaveAgent(seed: 42) { ThrowOnInvalidMove = true };
+        var game = Utils.CreateNewGame(4);
+
+        var move = agent.ChooseMove(game, TimeSpan.Zero, iterationLimit: 1000);
+
+        Assert.Contains(move, GameRules.GetLegalMoves(game).ToList());
+        Assert.Equal(0, agent.LastDiagnostics?.IterationsRun);
+    }
+
+    [Fact]
+    public void RaveAgent_ReturnsQuicklyFromNearlyFullBoard()
+    {
+        var game = CreateManualState(Player.White);
+        var empty = new Position(3, 3);
+
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 0; col < 4; col++)
+            {
+                var pos = new Position(row, col);
+                if (pos == empty)
+                    continue;
+
+                var owner = (row + col) % 2 == 0 ? Player.White : Player.Black;
+                game.Board.PlacePiece(pos, new Piece(owner, PieceType.Flat));
+            }
+        }
+
+        var agent = new RaveAgent(seed: 42) { ThrowOnInvalidMove = true };
+        var stopwatch = Stopwatch.StartNew();
+
+        var move = agent.ChooseMove(game, TimeSpan.FromMilliseconds(20), iterationLimit: 10_000);
+
+        stopwatch.Stop();
+        Assert.Contains(move, GameRules.GetLegalMoves(game).ToList());
+        Assert.True(stopwatch.ElapsedMilliseconds < 1000);
+    }
+
+    [Fact]
+    public void RaveAgent_BeatsRandomInSmallDeterministicMatch()
+    {
+        int raveWins = 0;
+        int randomWins = 0;
+
+        for (int gameIndex = 0; gameIndex < 6; gameIndex++)
+        {
+            var raveIsWhite = gameIndex % 2 == 0;
+            var result = PlaySmallGame(
+                raveIsWhite ? new RaveAgent(seed: 100 + gameIndex) : new RandomAgent(seed: 200 + gameIndex),
+                raveIsWhite ? new RandomAgent(seed: 200 + gameIndex) : new RaveAgent(seed: 100 + gameIndex),
+                iterationLimit: 80);
+
+            if (result.Winner == Player.None)
+                continue;
+
+            var raveWon = (result.Winner == Player.White && raveIsWhite) || (result.Winner == Player.Black && !raveIsWhite);
+            if (raveWon)
+                raveWins++;
+            else
+                randomWins++;
+        }
+
+        Assert.True(raveWins >= randomWins, $"Expected RAVE not to underperform Random, got RAVE {raveWins}, Random {randomWins}.");
     }
 
     [Fact]
@@ -157,5 +297,52 @@ public class AgentTests
                 _ => ""
             }, agent.Name);
         }
+    }
+
+    private static GameState CreateManualState(Player currentPlayer)
+    {
+        var game = Utils.CreateNewGame(4);
+        game.CurrentPlayer = currentPlayer;
+        game.IsOpening[Player.White] = false;
+        game.IsOpening[Player.Black] = false;
+        return game;
+    }
+
+    private static GameResult PlaySmallGame(IAgent white, IAgent black, int iterationLimit)
+    {
+        var game = Utils.CreateNewGame(4);
+        int moveCount = 0;
+
+        while (game.Result == null && moveCount < 120)
+        {
+            var agent = game.CurrentPlayer == Player.White ? white : black;
+            var move = agent.ChooseMove(game, TimeSpan.FromMilliseconds(50), iterationLimit);
+            Assert.Contains(move, GameRules.GetLegalMoves(game).ToList());
+            game = game.MakeMove(move);
+            moveCount++;
+        }
+
+        Assert.NotNull(game.Result);
+        return game.Result;
+    }
+
+    private static string Snapshot(GameState state)
+    {
+        var rows = new List<string>
+        {
+            state.CurrentPlayer.ToString(),
+            state.MoveHistory.Count.ToString()
+        };
+
+        for (int row = 0; row < state.Config.BoardSize; row++)
+        {
+            for (int col = 0; col < state.Config.BoardSize; col++)
+            {
+                var stack = state.Board.GetStack(new Position(row, col));
+                rows.Add(string.Join("/", stack.GetPieces().Select(piece => $"{piece.Owner}:{piece.Type}")));
+            }
+        }
+
+        return string.Join("|", rows);
     }
 }

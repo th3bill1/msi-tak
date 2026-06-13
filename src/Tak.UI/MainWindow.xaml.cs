@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     }
 
     private const int DefaultAiIterationLimit = 500;
+    private static readonly TimeSpan DefaultAiTimeLimit = TimeSpan.FromMilliseconds(750);
 
     private GameState? gameState;
     private Player humanPlayer = Player.White;

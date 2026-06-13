@@ -13,14 +13,14 @@ public class PwMctsTree
 
     public PwMctsTree(GameState initialState, double explorationConstant, double c_pw, double alpha, int? seed = null)
     {
-        root = new PwMctsNode(initialState, c_pw, alpha);
+        root = new PwMctsNode(initialState.Clone(), c_pw, alpha);
         random = seed.HasValue ? new Random(seed.Value) : new Random();
         this.explorationConstant = explorationConstant;
         this.c_pw = c_pw;
         this.alpha = alpha;
     }
 
-    public void RunIteration()
+    public void RunIteration(int maxRolloutMoves = 512)
     {
         var node = Selection(root);
 
@@ -33,7 +33,7 @@ public class PwMctsTree
         }
 
         Player mover = node.Parent?.State.CurrentPlayer ?? node.State.CurrentPlayer;
-        double reward = Simulation(node, mover);
+        double reward = Simulation(node, mover, maxRolloutMoves);
         node.Backpropagate(reward);
     }
 
@@ -49,11 +49,12 @@ public class PwMctsTree
         return node;
     }
 
-    private double Simulation(PwMctsNode node, Player perspective)
+    private double Simulation(PwMctsNode node, Player perspective, int maxRolloutMoves)
     {
         var state = node.State.Clone();
+        int depth = 0;
 
-        while (state.Result == null)
+        while (state.Result == null && depth < maxRolloutMoves)
         {
             var moves = GameRules.GetLegalMoves(state).ToList();
             if (moves.Count == 0)
@@ -61,6 +62,7 @@ public class PwMctsTree
 
             var move = moves[random.Next(moves.Count)];
             state = state.MakeMove(move);
+            depth++;
         }
 
         return EvaluateTerminalState(state, perspective);
@@ -195,7 +197,7 @@ public class PwMctsNode
             return double.PositiveInfinity;
 
         double exploitation = node.Wins / node.Visits;
-        double exploration = c * Math.Sqrt(Math.Log(Visits) / node.Visits);
+        double exploration = c * Math.Sqrt(Math.Log(Math.Max(1, Visits)) / node.Visits);
         return exploitation + exploration;
     }
 

@@ -14,6 +14,7 @@ class Program
             string agentB = "heuristic";
             int games = 100;
             int iterations = 1000;
+            int moveTimeMs = 1000;
             int seed = new Random().Next();
             double exploration = 1.414;
             string output = "results/tournament.csv";
@@ -37,6 +38,9 @@ class Program
                     case "--iterations":
                         iterations = int.Parse(args[++i]);
                         break;
+                    case "--move-time-ms":
+                        moveTimeMs = int.Parse(args[++i]);
+                        break;
                     case "--seed":
                         seed = int.Parse(args[++i]);
                         break;
@@ -55,7 +59,8 @@ class Program
             var b = AgentFactory.CreateAgent(agentB, seed, exploration);
 
             // Run tournament
-            var tournament = new Tournament(config, a, b, games / 2, iterations, seed, output);
+            var moveTimeLimit = moveTimeMs > 0 ? TimeSpan.FromMilliseconds(moveTimeMs) : (TimeSpan?)null;
+            var tournament = new Tournament(config, a, b, games / 2, iterations, moveTimeLimit, seed, output);
             tournament.Run();
 
             return 0;

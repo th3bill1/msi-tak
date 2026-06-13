@@ -1,5 +1,6 @@
 namespace Tak.AI;
 
+using System.Diagnostics;
 using Tak.Core;
 using Tak.AI.Mcts;
 
@@ -9,7 +10,7 @@ public class ProgressiveWideningAgent : Agent
     private readonly double explorationConstant;
     private readonly double c_pw;
     private readonly double alpha;
-    private readonly int? seed;
+    private readonly Random random;
 
     public override string Name => "PW";
 
@@ -18,20 +19,34 @@ public class ProgressiveWideningAgent : Agent
         this.explorationConstant = explorationConstant;
         this.c_pw = c_pw;
         this.alpha = alpha;
-        this.seed = seed;
+        random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         iterationLimit ??= 1000;
+        var legalMoves = GameRules.GetLegalMoves(state).ToList();
+        if (legalMoves.Count == 0)
+            throw new InvalidOperationException("No legal moves available");
 
-        var tree = new PwMctsTree(state, explorationConstant, c_pw, alpha, seed);
+        var immediateWin = TacticalMoveFinder.FindImmediateWinningMove(state, legalMoves);
+        if (immediateWin != null)
+            return immediateWin;
 
-        for (int i = 0; i < iterationLimit; i++)
+        var immediateBlock = TacticalMoveFinder.FindImmediateOpponentWinBlock(state, legalMoves);
+        if (immediateBlock != null)
+            return immediateBlock;
+
+        var tree = new PwMctsTree(state, explorationConstant, c_pw, alpha, random.Next());
+        var stopwatch = Stopwatch.StartNew();
+        var maxRolloutMoves = Math.Max(32, state.Config.BoardSize * state.Config.BoardSize * 2);
+
+        for (int i = 0; i < iterationLimit && (!timeLimit.HasValue || stopwatch.Elapsed < timeLimit.Value); i++)
         {
-            tree.RunIteration();
+            tree.RunIteration(maxRolloutMoves);
         }
 
-        return tree.GetBestMove();
+        var selected = tree.GetBestMove();
+        return legalMoves.Contains(selected) ? selected : legalMoves[0];
     }
 }

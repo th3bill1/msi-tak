@@ -3,6 +3,9 @@ namespace Tak.Core;
 /// <summary>Game rules and validation</summary>
 public static class GameRules
 {
+    private static readonly Direction[] OrthogonalDirections =
+        [Direction.Up, Direction.Down, Direction.Left, Direction.Right];
+
     /// <summary>Get all legal moves for the current state</summary>
     public static IEnumerable<Move> GetLegalMoves(GameState state)
     {
@@ -92,7 +95,7 @@ public static class GameRules
             for (int numToMove = 1; numToMove <= maxPieces; numToMove++)
             {
                 // Try each direction
-                foreach (var dir in new[] { Direction.Up, Direction.Down, Direction.Left, Direction.Right })
+                foreach (var dir in OrthogonalDirections)
                 {
                     // Generate all valid drop distributions for this direction
                     foreach (var move in GenerateSlideMoves(state, pos, dir, numToMove))
@@ -156,29 +159,9 @@ public static class GameRules
         if (squares < 1 || pieces < 1 || pieces > squares)
             yield break;
 
-        // Use backtracking to generate all valid distributions
-        var distribution = new int[squares];
-        GenerateDistributionsRecursive(pieces, squares, 0, distribution);
-
-        // Yield all valid distributions
         foreach (var dist in GenerateAllDistributions(pieces, squares))
         {
             yield return dist;
-        }
-    }
-
-    private static void GenerateDistributionsRecursive(int remaining, int positions, int index, int[] distribution)
-    {
-        if (index == positions - 1)
-        {
-            distribution[index] = remaining;
-            return;
-        }
-
-        for (int i = 1; i <= remaining - (positions - index - 1); i++)
-        {
-            distribution[index] = i;
-            GenerateDistributionsRecursive(remaining - i, positions, index + 1, distribution);
         }
     }
 
