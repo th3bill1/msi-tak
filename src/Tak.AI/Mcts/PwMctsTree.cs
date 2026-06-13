@@ -32,7 +32,8 @@ public class PwMctsTree
                 node = child;
         }
 
-        double reward = Simulation(node);
+        Player mover = node.Parent?.State.CurrentPlayer ?? node.State.CurrentPlayer;
+        double reward = Simulation(node, mover);
         node.Backpropagate(reward);
     }
 
@@ -48,7 +49,7 @@ public class PwMctsTree
         return node;
     }
 
-    private double Simulation(PwMctsNode node)
+    private double Simulation(PwMctsNode node, Player perspective)
     {
         var state = node.State.Clone();
 
@@ -62,18 +63,18 @@ public class PwMctsTree
             state = state.MakeMove(move);
         }
 
-        return EvaluateTerminalState(state, root.State.CurrentPlayer);
+        return EvaluateTerminalState(state, perspective);
     }
 
-    private double EvaluateTerminalState(GameState state, Player rootPlayer)
+    private double EvaluateTerminalState(GameState state, Player perspective)
     {
         if (state.Result == null)
-            return 0.0;
+            return 0.5;
 
         if (state.Result.Type == ResultType.Draw)
             return 0.5;
 
-        return state.Result.Winner == rootPlayer ? 1.0 : 0.0;
+        return state.Result.Winner == perspective ? 1.0 : 0.0;
     }
 
     public Move GetBestMove()
@@ -203,7 +204,7 @@ public class PwMctsNode
         Visits++;
         Wins += reward;
 
-        Parent?.Backpropagate(reward);
+        Parent?.Backpropagate(1.0 - reward);
     }
 
     public IEnumerable<PwMctsNode> GetChildren() => children?.Values ?? Enumerable.Empty<PwMctsNode>();

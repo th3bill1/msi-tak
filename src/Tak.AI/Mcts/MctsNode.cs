@@ -31,8 +31,10 @@ public class MctsNode
         State = state;
     }
 
-    /// <summary>Check if node is fully expanded</summary>
-    public bool IsFullyExpanded => unvisitedChildren == null || unvisitedChildren.Count == 0;
+    /// <summary>Check if node is fully expanded (all legal children have been added to the tree).
+    /// Returns false before InitializeChildren has been called - that case means "not yet expanded at all",
+    /// which must trigger expansion, not be treated as already complete.</summary>
+    public bool IsFullyExpanded => unvisitedChildren != null && unvisitedChildren.Count == 0;
 
     /// <summary>Check if node is terminal (game over)</summary>
     public bool IsTerminal => State.Result != null;
@@ -104,13 +106,16 @@ public class MctsNode
         return exploitation + exploration;
     }
 
-    /// <summary>Backpropagate result up the tree</summary>
+    /// <summary>Backpropagate result up the tree.
+    /// Reward is expressed from the perspective of the player who made the move into THIS node.
+    /// Because Tak is a two-player zero-sum game with alternating moves, the move into the parent
+    /// was made by the opponent, so the reward must be negated (1 - r) at each level.</summary>
     public void Backpropagate(double reward)
     {
         Visits++;
         Wins += reward;
 
-        Parent?.Backpropagate(reward);
+        Parent?.Backpropagate(1.0 - reward);
     }
 
     /// <summary>Get all children (initialized or not)</summary>
