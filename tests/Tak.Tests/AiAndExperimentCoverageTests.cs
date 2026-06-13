@@ -2,6 +2,7 @@ using Xunit;
 using Tak.AI;
 using Tak.Core;
 using Tak.Experiments;
+using System.IO;
 
 namespace Tak.Tests;
 
@@ -130,9 +131,9 @@ public class AiAndExperimentCoverageTests
         {
             var tournament = new Tournament(
                 new GameConfig(4),
-                new RandomAgent(seed: 1),
-                new RandomAgent(seed: 2),
-                gamesPerSide: 1,
+                new AgentSpec("Random", seed => new RandomAgent(seed)),
+                new AgentSpec("Heuristic", seed => new HeuristicAgent(seed)),
+                totalGames: 2,
                 iterationLimit: 5,
                 moveTimeLimit: TimeSpan.FromMilliseconds(50),
                 baseSeed: 123,
@@ -143,7 +144,7 @@ public class AiAndExperimentCoverageTests
             var lines = File.ReadAllLines(outputPath);
             Assert.True(lines.Length >= 2);
             Assert.Equal(
-                "GameIndex,BoardSize,AgentWhite,AgentBlack,Winner,ResultType,Moves,DurationMs,AverageMoveTimeMs,SimulationsPerSecond,Seed,IterationLimit,MoveTimeLimitMs",
+                "GameId,RunId,TimestampUtc,BoardSize,WhiteAgent,BlackAgent,Winner,ResultType,MoveCount,DurationMs,AverageMoveTimeMs,SimulationsPerSecond,Seed,WhiteSeed,BlackSeed,IterationLimit,MoveTimeLimitMs,Error",
                 lines[0]);
         }
         finally
@@ -158,6 +159,76 @@ public class AiAndExperimentCoverageTests
     {
         var ex = Assert.Throws<ArgumentException>(() => AgentFactory.CreateAgent("not-an-agent"));
         Assert.Contains("Unknown agent", ex.Message);
+    }
+
+    [Fact]
+    public void Program_RejectedInvalidAgentNameClearly()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"tak-invalid-agent-{Guid.NewGuid():N}.csv");
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        var originalOut = Console.Out;
+        var originalError = Console.Error;
+
+        try
+        {
+            Console.SetOut(stdout);
+            Console.SetError(stderr);
+
+            var exitCode = Program.Main(new[] { "--white", "not-an-agent", "--output", outputPath });
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("Unknown agent", stderr.ToString());
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalError);
+
+            if (File.Exists(outputPath))
+                File.Delete(outputPath);
+        }
+    }
+
+    [Fact]
+    public void Program_RunsQuickDefaultTournamentAndCreatesCsv()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"tak-default-{Guid.NewGuid():N}.csv");
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        var originalOut = Console.Out;
+        var originalError = Console.Error;
+
+        try
+        {
+            Console.SetOut(stdout);
+            Console.SetError(stderr);
+
+            var exitCode = Program.Main(new[]
+            {
+                "--games", "2",
+                "--board", "4",
+                "--seed", "123",
+                "--output", outputPath
+            });
+
+            Assert.Equal(0, exitCode);
+            Assert.True(File.Exists(outputPath));
+            Assert.Contains("TOURNAMENT SUMMARY", stdout.ToString());
+            Assert.Empty(stderr.ToString());
+
+            var lines = File.ReadAllLines(outputPath);
+            Assert.True(lines.Length >= 2);
+            Assert.StartsWith("GameId,RunId,TimestampUtc,BoardSize,WhiteAgent,BlackAgent", lines[0]);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalError);
+
+            if (File.Exists(outputPath))
+                File.Delete(outputPath);
+        }
     }
 
     [Fact]
@@ -223,9 +294,9 @@ public class AiAndExperimentCoverageTests
         {
             var tournament = new Tournament(
                 new GameConfig(4),
-                new RandomAgent(seed),
-                new HeuristicAgent(seed + 1),
-                gamesPerSide: 1,
+                new AgentSpec("Random", agentSeed => new RandomAgent(agentSeed)),
+                new AgentSpec("Heuristic", agentSeed => new HeuristicAgent(agentSeed)),
+                totalGames: 2,
                 iterationLimit: 5,
                 moveTimeLimit: TimeSpan.FromMilliseconds(50),
                 baseSeed: seed,
@@ -246,7 +317,7 @@ public class AiAndExperimentCoverageTests
         return string.Join(Environment.NewLine, records.Select(record =>
         {
             var columns = record.Split(',');
-            return string.Join(',', columns[0], columns[1], columns[2], columns[3], columns[4], columns[5], columns[6], columns[10], columns[11], columns[12]);
+            return string.Join(',', columns[0], columns[3], columns[4], columns[5], columns[6], columns[7], columns[8], columns[12], columns[13], columns[14], columns[15], columns[16]);
         }));
     }
 
