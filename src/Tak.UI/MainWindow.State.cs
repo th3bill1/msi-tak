@@ -6,6 +6,7 @@ using Tak.Core;
 
 namespace Tak.UI;
 
+/// <summary>State-management helpers for the main Tak board window.</summary>
 public partial class MainWindow
 {
     private void StartNewGame(bool startAutoPlay = false)

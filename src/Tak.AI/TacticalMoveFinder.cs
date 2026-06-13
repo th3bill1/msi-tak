@@ -4,6 +4,10 @@ using Tak.Core;
 
 internal static class TacticalMoveFinder
 {
+    /// <summary>Finds a legal move that wins immediately for the current player.</summary>
+    /// <param name="state">The current game state.</param>
+    /// <param name="legalMoves">The legal moves to inspect.</param>
+    /// <returns>An immediate winning move, or <see langword="null" /> if none exists.</returns>
     public static Move? FindImmediateWinningMove(GameState state, IReadOnlyList<Move> legalMoves)
     {
         foreach (var move in legalMoves)
@@ -16,6 +20,10 @@ internal static class TacticalMoveFinder
         return null;
     }
 
+    /// <summary>Finds a safe legal move when the opponent has an immediate winning reply.</summary>
+    /// <param name="state">The current game state.</param>
+    /// <param name="legalMoves">The legal moves to inspect.</param>
+    /// <returns>A blocking or safe move, or <see langword="null" /> if no immediate opponent win was found.</returns>
     public static Move? FindImmediateOpponentWinBlock(GameState state, IReadOnlyList<Move> legalMoves)
     {
         Move? safeMove = null;

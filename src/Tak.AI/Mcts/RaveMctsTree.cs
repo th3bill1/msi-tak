@@ -9,6 +9,10 @@ public class RaveMctsTree
     private readonly Random random;
     private readonly double explorationConstant;
 
+    /// <summary>Creates a RAVE MCTS tree rooted at the supplied initial state.</summary>
+    /// <param name="initialState">The state to search from.</param>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <param name="seed">The optional random seed.</param>
     public RaveMctsTree(GameState initialState, double explorationConstant, int? seed = null)
     {
         root = new RaveMctsNode(initialState.Clone());
@@ -16,6 +20,8 @@ public class RaveMctsTree
         this.explorationConstant = explorationConstant;
     }
 
+    /// <summary>Runs one RAVE MCTS iteration.</summary>
+    /// <param name="maxRolloutMoves">The maximum number of moves to simulate in the rollout.</param>
     public void RunIteration(int maxRolloutMoves = 512)
     {
         // Selection: walk down using UCT+RAVE, recording the path of nodes visited
@@ -109,6 +115,8 @@ public class RaveMctsTree
         return state.Result.Winner == perspective ? 1.0 : 0.0;
     }
 
+    /// <summary>Chooses the best root move by visit count.</summary>
+    /// <returns>The move belonging to the most visited root child.</returns>
     public Move GetBestMove()
     {
         root.InitializeChildren();
@@ -125,6 +133,8 @@ public class RaveMctsTree
         return bestChild.Move;
     }
 
+    /// <summary>Gets root search statistics.</summary>
+    /// <returns>The root visit count and root win rate.</returns>
     public (int visits, double winRate) GetRootStats()
     {
         return (root.Visits, root.Wins / Math.Max(1, root.Visits));
@@ -134,24 +144,39 @@ public class RaveMctsTree
 /// <summary>MCTS node with RAVE support</summary>
 public class RaveMctsNode
 {
+    /// <summary>Gets or sets the parent node, or <see langword="null" /> for the root.</summary>
     public RaveMctsNode? Parent { get; set; }
+
+    /// <summary>Gets or sets the move that led from the parent to this node.</summary>
     public Move? Move { get; set; }
+
+    /// <summary>Gets the game state represented by this node.</summary>
     public GameState State { get; }
+
+    /// <summary>Gets or sets the number of visits to this node.</summary>
     public int Visits { get; set; } = 0;
+
+    /// <summary>Gets or sets the accumulated reward for this node.</summary>
     public double Wins { get; set; } = 0;
 
     private Dictionary<Move, RaveMctsNode>? children;
     private List<Move>? unvisitedChildren;
     private Dictionary<Move, RaveData>? raveStats;
 
+    /// <summary>Creates a RAVE node for the supplied game state.</summary>
+    /// <param name="state">The game state represented by the node.</param>
     public RaveMctsNode(GameState state)
     {
         State = state;
     }
 
+    /// <summary>Gets whether all legal child moves have been expanded.</summary>
     public bool IsFullyExpanded => unvisitedChildren != null && unvisitedChildren.Count == 0;
+
+    /// <summary>Gets whether the node represents a terminal game state.</summary>
     public bool IsTerminal => State.Result != null;
 
+    /// <summary>Initializes the node's unvisited child move list and RAVE statistics.</summary>
     public void InitializeChildren()
     {
         if (unvisitedChildren != null)
@@ -167,6 +192,9 @@ public class RaveMctsNode
         }
     }
 
+    /// <summary>Selects and expands one unvisited child.</summary>
+    /// <param name="random">The random source used to choose the move.</param>
+    /// <returns>The newly expanded child node, or <see langword="null" /> if none are available.</returns>
     public RaveMctsNode? SelectUnvisitedChild(Random random)
     {
         if (unvisitedChildren == null || unvisitedChildren.Count == 0)
@@ -182,6 +210,9 @@ public class RaveMctsNode
         return child;
     }
 
+    /// <summary>Selects the expanded child with the best UCT/RAVE mixed value.</summary>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <returns>The best child node, or <see langword="null" /> if there are no children.</returns>
     public RaveMctsNode? SelectBestChild(double explorationConstant)
     {
         if (children == null || children.Count == 0)
@@ -203,6 +234,8 @@ public class RaveMctsNode
         return bestChild;
     }
 
+    /// <summary>Selects the expanded child with the most visits.</summary>
+    /// <returns>The most visited child, or <see langword="null" /> if there are no children.</returns>
     public RaveMctsNode? SelectMostVisitedChild()
     {
         if (children == null || children.Count == 0)
@@ -239,6 +272,10 @@ public class RaveMctsNode
     /// i.e. moves played AT or AFTER this node in the current iteration. For each such (move, player)
     /// where player == sideToMove and the move is one of our tracked children, record the reward
     /// as if that move had been the first move from this position.</summary>
+    /// <param name="trajectory">The moves played during the selection, expansion, and rollout phases.</param>
+    /// <param name="startIndex">The first trajectory index that belongs to this node's AMAF set.</param>
+    /// <param name="sideToMove">The player to match when updating RAVE statistics.</param>
+    /// <param name="reward">The reward to record for matching trajectory moves.</param>
     public void UpdateRaveFromTrajectory(
         List<(Move move, Player player)> trajectory,
         int startIndex,
@@ -260,5 +297,7 @@ public class RaveMctsNode
         }
     }
 
+    /// <summary>Gets the expanded children of this node.</summary>
+    /// <returns>The expanded child nodes.</returns>
     public IEnumerable<RaveMctsNode> GetChildren() => children?.Values ?? Enumerable.Empty<RaveMctsNode>();
 }

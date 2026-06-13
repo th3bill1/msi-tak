@@ -4,6 +4,7 @@ using Tak.Core;
 
 namespace Tak.UI;
 
+/// <summary>Move-builder helpers for the main Tak board window.</summary>
 public partial class MainWindow
 {
     private void UpdateMoveBuilderMode()

@@ -7,6 +7,8 @@ public static class GameRules
         [Direction.Up, Direction.Down, Direction.Left, Direction.Right];
 
     /// <summary>Get all legal moves for the current state</summary>
+    /// <param name="state">The state to generate moves for.</param>
+    /// <returns>All legal moves for the current player.</returns>
     public static IEnumerable<Move> GetLegalMoves(GameState state)
     {
         if (state.Result != null)

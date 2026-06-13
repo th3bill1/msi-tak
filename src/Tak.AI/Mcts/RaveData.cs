@@ -10,9 +10,11 @@ public class RaveData
     public double RaveWins { get; set; } = 0;
 
     /// <summary>Calculate RAVE value</summary>
+    /// <returns>The average RAVE reward, or 0.5 before any visits.</returns>
     public double GetRaveValue() => RaveVisits > 0 ? RaveWins / RaveVisits : 0.5;
 
     /// <summary>Update RAVE statistics</summary>
+    /// <param name="reward">The reward to add to the RAVE totals.</param>
     public void UpdateRave(double reward)
     {
         RaveVisits++;

@@ -28,16 +28,18 @@ public class Stack
     public bool IsEmpty => pieces.Count == 0;
 
     /// <summary>Add a piece to the top of the stack</summary>
+    /// <param name="piece">The piece to add.</param>
     public void Push(Piece piece) => pieces.Add(piece);
 
     /// <summary>Remove and return the top piece</summary>
+    /// <returns>The piece that was on top of the stack.</returns>
     public Piece Pop() => pieces.Count > 0 ? pieces.RemoveAtEnd() : throw new InvalidOperationException("Cannot pop from empty stack");
 
     /// <summary>Get a copy of all pieces</summary>
     public IReadOnlyList<Piece> GetPieces() => pieces.AsReadOnly();
 
-    /// <summary>Create a deep copy of this stack</summary>
     /// <summary>Creates a deep copy of this stack.</summary>
+    /// <returns>A new stack with the same pieces in the same order.</returns>
     public Stack Clone()
     {
         var clone = new Stack();
@@ -48,6 +50,7 @@ public class Stack
         return clone;
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         if (IsEmpty) return "empty";
@@ -63,6 +66,7 @@ public class Board
     public int Size { get; }
 
     /// <summary>Creates a board with the specified size.</summary>
+    /// <param name="size">The number of rows and columns on the board.</param>
     public Board(int size)
     {
         Size = size;
@@ -74,6 +78,8 @@ public class Board
     }
 
     /// <summary>Get the stack at a position</summary>
+    /// <param name="pos">The position to read.</param>
+    /// <returns>The stack at the specified position.</returns>
     public Stack GetStack(Position pos)
     {
         ValidatePosition(pos);
@@ -81,9 +87,13 @@ public class Board
     }
 
     /// <summary>Check if a position is empty</summary>
+    /// <param name="pos">The position to check.</param>
+    /// <returns><see langword="true" /> if the position has no pieces.</returns>
     public bool IsEmpty(Position pos) => GetStack(pos).IsEmpty;
 
     /// <summary>Place a piece on a square (must be empty)</summary>
+    /// <param name="pos">The position to place on.</param>
+    /// <param name="piece">The piece to place.</param>
     public void PlacePiece(Position pos, Piece piece)
     {
         if (!IsEmpty(pos))
@@ -92,6 +102,7 @@ public class Board
     }
 
     /// <summary>Get all non-empty squares</summary>
+    /// <returns>The positions and stacks for every occupied square.</returns>
     public IEnumerable<(Position pos, Stack stack)> GetNonEmptySquares()
     {
         for (int r = 0; r < Size; r++)
@@ -106,8 +117,8 @@ public class Board
         }
     }
 
-    /// <summary>Create a deep copy of the board</summary>
     /// <summary>Creates a deep copy of this board.</summary>
+    /// <returns>A new board with cloned stacks.</returns>
     public Board Clone()
     {
         var clone = new Board(Size);
@@ -128,6 +139,10 @@ public class Board
 /// <summary>Extension helper for removing the last element from a list</summary>
 internal static class ListExtensions
 {
+    /// <summary>Removes and returns the last element from a list.</summary>
+    /// <typeparam name="T">The element type.</typeparam>
+    /// <param name="list">The list to remove from.</param>
+    /// <returns>The removed element.</returns>
     public static T RemoveAtEnd<T>(this List<T> list)
     {
         var index = list.Count - 1;

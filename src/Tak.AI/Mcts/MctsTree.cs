@@ -9,6 +9,10 @@ public class MctsTree
     private readonly Random random;
     private readonly double explorationConstant;
 
+    /// <summary>Creates an MCTS tree rooted at the supplied initial state.</summary>
+    /// <param name="initialState">The state to search from.</param>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <param name="seed">The optional random seed.</param>
     public MctsTree(GameState initialState, double explorationConstant, int? seed = null)
     {
         root = new MctsNode(initialState.Clone());
@@ -17,6 +21,7 @@ public class MctsTree
     }
 
     /// <summary>Run one MCTS iteration</summary>
+    /// <param name="maxRolloutMoves">The maximum number of moves to simulate in the rollout.</param>
     public void RunIteration(int maxRolloutMoves = 512)
     {
         // Selection
@@ -86,6 +91,7 @@ public class MctsTree
     }
 
     /// <summary>Choose best move (most visited child)</summary>
+    /// <returns>The move belonging to the most visited root child.</returns>
     public Move GetBestMove()
     {
         root.InitializeChildren();
@@ -106,9 +112,11 @@ public class MctsTree
     }
 
     /// <summary>Get root node</summary>
+    /// <returns>The root node of the tree.</returns>
     public MctsNode GetRoot() => root;
 
     /// <summary>Get statistics</summary>
+    /// <returns>The root visit count and root win rate.</returns>
     public (int visits, double winRate) GetRootStats()
     {
         return (root.Visits, root.Wins / Math.Max(1, root.Visits));

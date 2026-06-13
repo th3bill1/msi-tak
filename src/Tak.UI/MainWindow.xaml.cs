@@ -6,6 +6,7 @@ using Tak.Core;
 
 namespace Tak.UI;
 
+/// <summary>Main window for playing and reviewing Tak games.</summary>
 public partial class MainWindow : Window
 {
     private enum MoveBuilderMode

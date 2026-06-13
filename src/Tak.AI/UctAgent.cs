@@ -10,9 +10,12 @@ public class UctAgent : Agent
     private readonly double explorationConstant;
     private readonly Random random;
 
+    /// <inheritdoc />
     public override string Name => "UCT";
 
     /// <summary>Create a UCT agent with an optional deterministic seed.</summary>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <param name="seed">The optional random seed.</param>
     public UctAgent(double explorationConstant = 1.414, int? seed = null)
     {
         this.explorationConstant = explorationConstant;
@@ -20,6 +23,10 @@ public class UctAgent : Agent
     }
 
     /// <summary>Choose a move using UCT search within the provided limits.</summary>
+    /// <param name="state">The current game state.</param>
+    /// <param name="timeLimit">The optional time limit.</param>
+    /// <param name="iterationLimit">The optional iteration limit.</param>
+    /// <returns>The selected move.</returns>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         iterationLimit ??= 1000;

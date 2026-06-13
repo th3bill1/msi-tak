@@ -11,6 +11,12 @@ public class PwMctsTree
     private readonly double c_pw;
     private readonly double alpha;
 
+    /// <summary>Creates a progressive widening MCTS tree rooted at the supplied state.</summary>
+    /// <param name="initialState">The state to search from.</param>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <param name="c_pw">The progressive widening scale constant.</param>
+    /// <param name="alpha">The progressive widening growth exponent.</param>
+    /// <param name="seed">The optional random seed.</param>
     public PwMctsTree(GameState initialState, double explorationConstant, double c_pw, double alpha, int? seed = null)
     {
         root = new PwMctsNode(initialState.Clone(), c_pw, alpha);
@@ -20,6 +26,8 @@ public class PwMctsTree
         this.alpha = alpha;
     }
 
+    /// <summary>Runs one progressive widening MCTS iteration.</summary>
+    /// <param name="maxRolloutMoves">The maximum number of moves to simulate in the rollout.</param>
     public void RunIteration(int maxRolloutMoves = 512)
     {
         var node = Selection(root);
@@ -79,6 +87,8 @@ public class PwMctsTree
         return state.Result.Winner == perspective ? 1.0 : 0.0;
     }
 
+    /// <summary>Chooses the best root move by visit count.</summary>
+    /// <returns>The move belonging to the most visited root child.</returns>
     public Move GetBestMove()
     {
         root.InitializeChildren();
@@ -100,10 +110,19 @@ public class PwMctsTree
 /// <summary>MCTS node with Progressive Widening support</summary>
 public class PwMctsNode
 {
+    /// <summary>Gets or sets the parent node, or <see langword="null" /> for the root.</summary>
     public PwMctsNode? Parent { get; set; }
+
+    /// <summary>Gets or sets the move that led from the parent to this node.</summary>
     public Move? Move { get; set; }
+
+    /// <summary>Gets the game state represented by this node.</summary>
     public GameState State { get; }
+
+    /// <summary>Gets or sets the number of visits to this node.</summary>
     public int Visits { get; set; } = 0;
+
+    /// <summary>Gets or sets the accumulated reward for this node.</summary>
     public double Wins { get; set; } = 0;
 
     private Dictionary<Move, PwMctsNode>? children;
@@ -111,6 +130,10 @@ public class PwMctsNode
     private readonly double c_pw;
     private readonly double alpha;
 
+    /// <summary>Creates a progressive widening node for the supplied game state.</summary>
+    /// <param name="state">The game state represented by the node.</param>
+    /// <param name="c_pw">The progressive widening scale constant.</param>
+    /// <param name="alpha">The progressive widening growth exponent.</param>
     public PwMctsNode(GameState state, double c_pw, double alpha)
     {
         State = state;
@@ -118,6 +141,7 @@ public class PwMctsNode
         this.alpha = alpha;
     }
 
+    /// <summary>Gets whether the node has reached its current progressive widening child limit.</summary>
     public bool IsFullyExpanded
     {
         get
@@ -131,8 +155,10 @@ public class PwMctsNode
         }
     }
 
+    /// <summary>Gets whether the node represents a terminal game state.</summary>
     public bool IsTerminal => State.Result != null;
 
+    /// <summary>Initializes the node's unvisited child move list.</summary>
     public void InitializeChildren()
     {
         if (unvisitedChildren != null)
@@ -142,6 +168,9 @@ public class PwMctsNode
         children = new Dictionary<Move, PwMctsNode>();
     }
 
+    /// <summary>Selects and expands one unvisited child if progressive widening permits it.</summary>
+    /// <param name="random">The random source used to choose the move.</param>
+    /// <returns>The newly expanded child node, or <see langword="null" /> if none can be expanded.</returns>
     public PwMctsNode? SelectUnvisitedChild(Random random)
     {
         if (unvisitedChildren == null || unvisitedChildren.Count == 0)
@@ -162,6 +191,9 @@ public class PwMctsNode
         return child;
     }
 
+    /// <summary>Selects the expanded child with the highest UCT value.</summary>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <returns>The best child node, or <see langword="null" /> if there are no children.</returns>
     public PwMctsNode? SelectBestChild(double explorationConstant)
     {
         if (children == null || children.Count == 0)
@@ -183,6 +215,8 @@ public class PwMctsNode
         return bestChild;
     }
 
+    /// <summary>Selects the expanded child with the most visits.</summary>
+    /// <returns>The most visited child, or <see langword="null" /> if there are no children.</returns>
     public PwMctsNode? SelectMostVisitedChild()
     {
         if (children == null || children.Count == 0)
@@ -201,6 +235,8 @@ public class PwMctsNode
         return exploitation + exploration;
     }
 
+    /// <summary>Backpropagates a reward through this node and its ancestors.</summary>
+    /// <param name="reward">The reward to add at this node.</param>
     public void Backpropagate(double reward)
     {
         Visits++;
@@ -209,5 +245,7 @@ public class PwMctsNode
         Parent?.Backpropagate(1.0 - reward);
     }
 
+    /// <summary>Gets the expanded children of this node.</summary>
+    /// <returns>The expanded child nodes.</returns>
     public IEnumerable<PwMctsNode> GetChildren() => children?.Values ?? Enumerable.Empty<PwMctsNode>();
 }

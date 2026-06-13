@@ -7,15 +7,21 @@ public class HeuristicAgent : Agent
 {
     private readonly Random random;
 
+    /// <inheritdoc />
     public override string Name => "Heuristic";
 
     /// <summary>Create a heuristic agent with an optional deterministic seed.</summary>
+    /// <param name="seed">The optional random seed used to break score ties.</param>
     public HeuristicAgent(int? seed = null)
     {
         random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
     /// <summary>Choose the highest-scoring legal move using the built-in heuristic.</summary>
+    /// <param name="state">The current game state.</param>
+    /// <param name="timeLimit">The optional time limit. This agent does not use it.</param>
+    /// <param name="iterationLimit">The optional iteration limit. This agent does not use it.</param>
+    /// <returns>The selected move.</returns>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         var moves = GameRules.GetLegalMoves(state).ToList();
@@ -51,23 +57,15 @@ public class HeuristicAgent : Agent
             }
         }
 
-        if (move is PlaceMove pm)
+        if (move is PlaceMove)
         {
-            score += 10;
+            score += 2;
         }
 
         if (move is SlideMove)
         {
-            score += 5;
+            score += 1;
         }
-
-        int flatCount = 0;
-        foreach (var (_, stack) in testState.Board.GetNonEmptySquares())
-        {
-            if (stack.Owner == state.CurrentPlayer && stack.TopPiece.IsFlat)
-                flatCount++;
-        }
-        score += flatCount * 0.1;
 
         return score;
     }

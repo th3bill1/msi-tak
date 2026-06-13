@@ -13,6 +13,7 @@ public class GameConfig
     public int CapstonCount { get; }
 
     /// <summary>Creates a game configuration for the specified board size.</summary>
+    /// <param name="boardSize">The board size to configure.</param>
     public GameConfig(int boardSize)
     {
         BoardSize = boardSize switch

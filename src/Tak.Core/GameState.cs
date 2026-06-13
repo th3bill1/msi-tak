@@ -28,6 +28,7 @@ public class GameState
     public Dictionary<Player, bool> IsOpening { get; }
 
     /// <summary>Creates a new game state for the given configuration.</summary>
+    /// <param name="config">The game configuration to use.</param>
     public GameState(GameConfig config)
     {
         Config = config;
@@ -67,6 +68,8 @@ public class GameState
     public GameState Clone() => new GameState(this);
 
     /// <summary>Makes a move and returns a new game state without mutating the current one.</summary>
+    /// <param name="move">The move to apply.</param>
+    /// <returns>A new game state after the move has been applied.</returns>
     public GameState MakeMove(Move move)
     {
         if (Result != null)
@@ -347,6 +350,7 @@ public class GameState
         return counts;
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return $"GameState: {CurrentPlayer} to move, moves: {MoveHistory.Count}";

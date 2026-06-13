@@ -6,6 +6,7 @@ using Tak.Core;
 
 namespace Tak.UI;
 
+/// <summary>Formatting and visual helper methods for the main Tak board window.</summary>
 public partial class MainWindow
 {
     private static string FormatHistoryEntry(GameState stateBeforeMove, Move move, int moveIndex)

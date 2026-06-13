@@ -26,6 +26,8 @@ public class MctsNode
     /// <summary>Unvisited children</summary>
     private List<Move>? unvisitedChildren;
 
+    /// <summary>Creates a node for the supplied game state.</summary>
+    /// <param name="state">The game state represented by the node.</param>
     public MctsNode(GameState state)
     {
         State = state;
@@ -50,6 +52,8 @@ public class MctsNode
     }
 
     /// <summary>Get an unvisited child and add it to visited</summary>
+    /// <param name="random">The random source used to select an unvisited child.</param>
+    /// <returns>The newly expanded child node, or <see langword="null" /> if none are available.</returns>
     public MctsNode? SelectUnvisitedChild(Random random)
     {
         if (unvisitedChildren == null || unvisitedChildren.Count == 0)
@@ -66,6 +70,8 @@ public class MctsNode
     }
 
     /// <summary>Get best child by UCT formula</summary>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <returns>The child with the highest UCT value, or <see langword="null" /> if there are no children.</returns>
     public MctsNode? SelectBestChild(double explorationConstant)
     {
         if (children == null || children.Count == 0)
@@ -88,6 +94,7 @@ public class MctsNode
     }
 
     /// <summary>Get child with most visits</summary>
+    /// <returns>The most visited child, or <see langword="null" /> if there are no children.</returns>
     public MctsNode? SelectMostVisitedChild()
     {
         if (children == null || children.Count == 0)
@@ -110,6 +117,7 @@ public class MctsNode
     /// Reward is expressed from the perspective of the player who made the move into THIS node.
     /// Because Tak is a two-player zero-sum game with alternating moves, the move into the parent
     /// was made by the opponent, so the reward must be negated (1 - r) at each level.</summary>
+    /// <param name="reward">The reward to add at this node.</param>
     public void Backpropagate(double reward)
     {
         Visits++;
@@ -119,6 +127,7 @@ public class MctsNode
     }
 
     /// <summary>Get all children (initialized or not)</summary>
+    /// <returns>The expanded child nodes.</returns>
     public IEnumerable<MctsNode> GetChildren()
     {
         return children?.Values ?? Enumerable.Empty<MctsNode>();

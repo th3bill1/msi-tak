@@ -4,6 +4,14 @@ using System.Diagnostics;
 using Tak.Core;
 using Tak.AI.Mcts;
 
+/// <summary>Diagnostics captured from the most recent RAVE search.</summary>
+/// <param name="SelectedMove">The move selected by the search.</param>
+/// <param name="LegalMoveCount">The number of legal moves available at the root.</param>
+/// <param name="IterationsRun">The number of search iterations completed.</param>
+/// <param name="Duration">The elapsed search duration.</param>
+/// <param name="RootVisits">The number of visits recorded at the root node.</param>
+/// <param name="RootWinRate">The root node win rate.</param>
+/// <param name="SelectionReason">Additional context for fallback or tactical selections.</param>
 public record RaveSearchDiagnostics(
     Move? SelectedMove,
     int LegalMoveCount,
@@ -20,11 +28,18 @@ public class RaveAgent : Agent
     private readonly double explorationConstant;
     private readonly Random random;
 
+    /// <inheritdoc />
     public override string Name => "RAVE";
+
+    /// <summary>Gets diagnostics from the most recent call to <see cref="ChooseMove" />.</summary>
     public RaveSearchDiagnostics? LastDiagnostics { get; private set; }
+
+    /// <summary>Gets or sets whether the agent throws when search returns an illegal move.</summary>
     public bool ThrowOnInvalidMove { get; set; }
 
     /// <summary>Create a RAVE-enhanced MCTS agent with an optional deterministic seed.</summary>
+    /// <param name="explorationConstant">The UCT exploration constant.</param>
+    /// <param name="seed">The optional random seed.</param>
     public RaveAgent(double explorationConstant = 1.414, int? seed = null)
     {
         this.explorationConstant = explorationConstant;
@@ -32,6 +47,10 @@ public class RaveAgent : Agent
     }
 
     /// <summary>Choose a move using RAVE-augmented search within the provided limits.</summary>
+    /// <param name="state">The current game state.</param>
+    /// <param name="timeLimit">The optional time limit.</param>
+    /// <param name="iterationLimit">The optional iteration limit.</param>
+    /// <returns>The selected move.</returns>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         iterationLimit ??= 1000;
