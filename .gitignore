@@ -58,3 +58,8 @@ local.settings.json
 results/*.csv
 results/*.png
 !results/.gitkeep
+
+
+results/sweep/*.csv
+results/plots/*
+.venv/*
