@@ -27,6 +27,7 @@ public class GameState
     /// <summary>Is opening rule active (first move by each player)?</summary>
     public Dictionary<Player, bool> IsOpening { get; }
 
+    /// <summary>Creates a new game state for the given configuration.</summary>
     public GameState(GameConfig config)
     {
         Config = config;
@@ -62,10 +63,10 @@ public class GameState
         Result = other.Result;
     }
 
-    /// <summary>Create a deep copy of the game state</summary>
+    /// <summary>Creates a deep copy of the game state.</summary>
     public GameState Clone() => new GameState(this);
 
-    /// <summary>Make a move and return a new game state (this state is unchanged)</summary>
+    /// <summary>Makes a move and returns a new game state without mutating the current one.</summary>
     public GameState MakeMove(Move move)
     {
         if (Result != null)

@@ -9,11 +9,13 @@ public class HeuristicAgent : Agent
 
     public override string Name => "Heuristic";
 
+    /// <summary>Create a heuristic agent with an optional deterministic seed.</summary>
     public HeuristicAgent(int? seed = null)
     {
         random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
+    /// <summary>Choose the highest-scoring legal move using the built-in heuristic.</summary>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         var moves = GameRules.GetLegalMoves(state).ToList();
@@ -34,11 +36,9 @@ public class HeuristicAgent : Agent
 
         double score = 0;
 
-        // 1. Immediate win
         if (testState.Result?.Winner == state.CurrentPlayer)
             return 100000;
 
-        // 2. Block opponent's immediate win
         var opponentMoves = GameRules.GetLegalMoves(testState).ToList();
         foreach (var opMove in opponentMoves)
         {
@@ -51,19 +51,16 @@ public class HeuristicAgent : Agent
             }
         }
 
-        // 3. Prefer placement moves that increase control
         if (move is PlaceMove pm)
         {
             score += 10;
         }
 
-        // 4. Prefer moves extending road
         if (move is SlideMove)
         {
             score += 5;
         }
 
-        // 5. Count controlled flat stones
         int flatCount = 0;
         foreach (var (_, stack) in testState.Board.GetNonEmptySquares())
         {

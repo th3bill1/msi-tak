@@ -12,6 +12,7 @@ public class GameConfig
     /// <summary>Initial capstone count per player (0 or 1)</summary>
     public int CapstonCount { get; }
 
+    /// <summary>Creates a game configuration for the specified board size.</summary>
     public GameConfig(int boardSize)
     {
         BoardSize = boardSize switch
@@ -31,5 +32,6 @@ public class GameConfig
         };
     }
 
+    /// <summary>Returns a compact description of the configuration.</summary>
     public override string ToString() => $"{BoardSize}x{BoardSize} (flat: {FlatStoneCount}, cap: {CapstonCount})";
 }

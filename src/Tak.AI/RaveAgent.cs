@@ -24,12 +24,14 @@ public class RaveAgent : Agent
     public RaveSearchDiagnostics? LastDiagnostics { get; private set; }
     public bool ThrowOnInvalidMove { get; set; }
 
+    /// <summary>Create a RAVE-enhanced MCTS agent with an optional deterministic seed.</summary>
     public RaveAgent(double explorationConstant = 1.414, int? seed = null)
     {
         this.explorationConstant = explorationConstant;
         random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
+    /// <summary>Choose a move using RAVE-augmented search within the provided limits.</summary>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         iterationLimit ??= 1000;

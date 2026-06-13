@@ -2,7 +2,7 @@ namespace Tak.Experiments;
 
 using Tak.AI;
 
-/// <summary>Factory for creating agents from command line parameters</summary>
+/// <summary>Factory for creating agents from command-line parameters.</summary>
 public class AgentFactory
 {
     public static IReadOnlyList<string> SupportedAgentNames { get; } =
@@ -14,6 +14,7 @@ public class AgentFactory
         "pw"
     ];
 
+    /// <summary>Creates an AI agent from a command-line agent name.</summary>
     public static IAgent CreateAgent(string agentName, int? seed = null, double explorationConstant = 1.414)
     {
         if (string.IsNullOrWhiteSpace(agentName))

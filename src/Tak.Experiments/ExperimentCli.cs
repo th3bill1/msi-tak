@@ -16,8 +16,10 @@ public sealed record ExperimentOptions(
 
 public sealed record AgentSpec(string Name, Func<int, Tak.AI.IAgent> CreateAgent);
 
+/// <summary>Parses and formats command-line options for the experiment runner.</summary>
 public static class ExperimentCli
 {
+    /// <summary>Parse experiment command-line arguments into a validated options record.</summary>
     public static ExperimentOptions Parse(string[] args)
     {
         int boardSize = 4;
@@ -90,6 +92,7 @@ public static class ExperimentCli
             helpRequested);
     }
 
+    /// <summary>Return the CLI usage text for the experiment runner.</summary>
     public static string GetUsage()
     {
         var supportedAgents = string.Join(", ", AgentFactory.SupportedAgentNames);
@@ -120,6 +123,8 @@ Supported agents:
 """;
     }
 
+    /// <summary>Convert a millisecond time limit into a nullable <see cref="TimeSpan"/>.</summary>
+    /// <summary>Converts a millisecond limit into an optional time span.</summary>
     public static TimeSpan? ToMoveTimeLimit(int moveTimeLimitMs) => moveTimeLimitMs > 0 ? TimeSpan.FromMilliseconds(moveTimeLimitMs) : null;
 
     private static int ParsePositiveInt(string[] args, ref int index, string optionName)

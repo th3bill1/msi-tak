@@ -10,6 +10,7 @@ public readonly struct Position : IEquatable<Position>
     public int Col { get; }
 
     /// <summary>Create a new position</summary>
+    /// <summary>Creates a position from zero-based row and column coordinates.</summary>
     public Position(int row, int col)
     {
         Row = row;
@@ -43,6 +44,7 @@ public readonly struct Piece : IEquatable<Piece>
     public PieceType Type { get; }
 
     /// <summary>Create a new piece</summary>
+    /// <summary>Creates a piece with the specified owner and type.</summary>
     public Piece(Player owner, PieceType type)
     {
         Owner = owner;
@@ -132,6 +134,7 @@ public record GameResult(
 )
 {
     /// <summary>Get result as string</summary>
+    /// <summary>Returns a compact description of the game result.</summary>
     public override string ToString() => Type switch
     {
         ResultType.Road => $"Road win: {Winner}",

@@ -8,6 +8,7 @@ using Tak.Core;
 
 namespace Tak.UI;
 
+/// <summary>Rendering helpers for the main Tak board window.</summary>
 public partial class MainWindow
 {
     private const int FixedBoardPixels = 500;

@@ -14,6 +14,7 @@ public class ProgressiveWideningAgent : Agent
 
     public override string Name => "PW";
 
+    /// <summary>Create a progressive widening MCTS agent with an optional deterministic seed.</summary>
     public ProgressiveWideningAgent(double explorationConstant = 1.414, double c_pw = 0.5, double alpha = 0.5, int? seed = null)
     {
         this.explorationConstant = explorationConstant;
@@ -22,6 +23,7 @@ public class ProgressiveWideningAgent : Agent
         random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
+    /// <summary>Choose a move using progressive widening MCTS within the provided limits.</summary>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         iterationLimit ??= 1000;

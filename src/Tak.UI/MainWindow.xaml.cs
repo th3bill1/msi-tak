@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     private Position? selectedSlideSource;
     private CancellationTokenSource? aiLoopCancellation;
 
+    /// <summary>Initializes the main window and prepares the UI state.</summary>
     public MainWindow()
     {
         suppressUiEvents = true;

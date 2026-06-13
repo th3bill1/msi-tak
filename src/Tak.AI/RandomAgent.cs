@@ -9,11 +9,13 @@ public class RandomAgent : Agent
 
     public override string Name => "Random";
 
+    /// <summary>Create a random agent with an optional deterministic seed.</summary>
     public RandomAgent(int? seed = null)
     {
         random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
+    /// <summary>Choose a legal move uniformly at random.</summary>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         var moves = GameRules.GetLegalMoves(state).ToList();

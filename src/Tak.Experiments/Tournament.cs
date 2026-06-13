@@ -53,6 +53,7 @@ public sealed class Tournament
     private readonly string outputPath;
     private readonly string runId;
 
+    /// <summary>Create a new tournament runner.</summary>
     public Tournament(
         GameConfig config,
         AgentSpec whiteSpec,
@@ -75,6 +76,7 @@ public sealed class Tournament
         this.runId = string.IsNullOrWhiteSpace(runId) ? DateTimeOffset.UtcNow.ToString("yyyyMMddTHHmmssZ") : runId;
     }
 
+    /// <summary>Runs the configured tournament, writes CSV output, and prints a summary.</summary>
     public TournamentSummary Run()
     {
         var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

@@ -12,12 +12,14 @@ public class UctAgent : Agent
 
     public override string Name => "UCT";
 
+    /// <summary>Create a UCT agent with an optional deterministic seed.</summary>
     public UctAgent(double explorationConstant = 1.414, int? seed = null)
     {
         this.explorationConstant = explorationConstant;
         random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
+    /// <summary>Choose a move using UCT search within the provided limits.</summary>
     public override Move ChooseMove(GameState state, TimeSpan? timeLimit = null, int? iterationLimit = null)
     {
         iterationLimit ??= 1000;

@@ -4,6 +4,7 @@ using Tak.Core;
 
 public class Program
 {
+    /// <summary>Application entry point for the experiment runner.</summary>
     public static int Main(string[] args)
     {
         try

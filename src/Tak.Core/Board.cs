@@ -6,6 +6,7 @@ public class Stack
     /// <summary>Pieces in this stack (bottom to top)</summary>
     private List<Piece> pieces;
 
+    /// <summary>Creates an empty stack.</summary>
     public Stack()
     {
         pieces = new List<Piece>();
@@ -36,6 +37,7 @@ public class Stack
     public IReadOnlyList<Piece> GetPieces() => pieces.AsReadOnly();
 
     /// <summary>Create a deep copy of this stack</summary>
+    /// <summary>Creates a deep copy of this stack.</summary>
     public Stack Clone()
     {
         var clone = new Stack();
@@ -53,12 +55,14 @@ public class Stack
     }
 }
 
-/// <summary>Represents the game board</summary>
+/// <summary>Represents the game board.</summary>
 public class Board
 {
     private Stack[] squares;
+    /// <summary>Gets the board size in squares per side.</summary>
     public int Size { get; }
 
+    /// <summary>Creates a board with the specified size.</summary>
     public Board(int size)
     {
         Size = size;
@@ -103,6 +107,7 @@ public class Board
     }
 
     /// <summary>Create a deep copy of the board</summary>
+    /// <summary>Creates a deep copy of this board.</summary>
     public Board Clone()
     {
         var clone = new Board(Size);
