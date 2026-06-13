@@ -14,19 +14,37 @@ public partial class MainWindow : Window
         Slide
     }
 
+    private enum PlayerController
+    {
+        Human,
+        Random,
+        Heuristic,
+        Uct,
+        Rave,
+        ProgressiveWidening
+    }
+
     private const int DefaultAiIterationLimit = 500;
     private static readonly TimeSpan DefaultAiTimeLimit = TimeSpan.FromMilliseconds(750);
 
     private GameState? gameState;
     private Player humanPlayer = Player.White;
     private IAgent? aiAgent;
+    private IAgent? whiteAgent;
+    private IAgent? blackAgent;
     private Button[,]? boardButtons;
     private readonly List<GameState> stateTimeline = new();
     private int stateIndex = -1;
     private bool suppressUiEvents;
+    private bool suppressHistorySelectionEvents;
     private bool aiTurnInProgress;
+    private bool aiAutoPlayEnabled;
+    private bool aiAutoPlayPaused;
+    private bool aiAutoLoopRunning;
+    private bool aiStepRequested;
     private bool resultOverlayDismissed;
     private Position? selectedSlideSource;
+    private CancellationTokenSource? aiLoopCancellation;
 
     public MainWindow()
     {
@@ -41,12 +59,45 @@ public partial class MainWindow : Window
 
     private bool IsLiveState => CurrentState != null && stateIndex == stateTimeline.Count - 1;
 
-    private bool IsLiveHumanTurn => CurrentState != null && IsLiveState && CurrentState.Result == null && CurrentState.CurrentPlayer == humanPlayer;
+    private bool IsLiveHumanTurn => CurrentState != null && IsLiveState && CurrentState.Result == null && IsHumanController(CurrentState.CurrentPlayer);
 
     private void NewGameBtn_Click(object? sender, RoutedEventArgs e)
     {
         StartNewGame();
         _ = MaybePlayAiTurnAsync();
+    }
+
+    private void StartAiVsAiBtn_Click(object? sender, RoutedEventArgs e)
+    {
+        StartAiVsAiGame();
+        _ = MaybePlayAiTurnAsync();
+    }
+
+    private void PauseAiBtn_Click(object? sender, RoutedEventArgs e)
+    {
+        aiAutoPlayPaused = true;
+        HeaderStatusText.Text = "AI playback paused.";
+        UpdateControlsState();
+    }
+
+    private void ResumeAiBtn_Click(object? sender, RoutedEventArgs e)
+    {
+        aiAutoPlayEnabled = true;
+        aiAutoPlayPaused = false;
+        HeaderStatusText.Text = "AI playback resumed.";
+        UpdateControlsState();
+        _ = MaybePlayAiTurnAsync();
+    }
+
+    private void StepAiBtn_Click(object? sender, RoutedEventArgs e)
+    {
+        if (CurrentState == null || CurrentState.Result != null || IsLiveHumanTurn)
+            return;
+
+        aiAutoPlayEnabled = false;
+        aiAutoPlayPaused = true;
+        aiStepRequested = true;
+        _ = ExecuteSingleAiTurnAsync(System.Threading.CancellationToken.None);
     }
 
     private void ReplayBtn_Click(object? sender, RoutedEventArgs e)
@@ -76,6 +127,9 @@ public partial class MainWindow : Window
 
     private void UndoBtn_Click(object? sender, RoutedEventArgs e)
     {
+        if (aiTurnInProgress || (aiAutoPlayEnabled && !aiAutoPlayPaused))
+            return;
+
         if (stateIndex <= 0)
             return;
 
@@ -86,6 +140,9 @@ public partial class MainWindow : Window
 
     private void RedoBtn_Click(object? sender, RoutedEventArgs e)
     {
+        if (aiTurnInProgress || (aiAutoPlayEnabled && !aiAutoPlayPaused))
+            return;
+
         if (stateIndex < stateTimeline.Count - 1)
         {
             stateIndex++;
@@ -96,8 +153,14 @@ public partial class MainWindow : Window
 
     private void MoveHistoryList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (suppressUiEvents)
+        if (suppressUiEvents || suppressHistorySelectionEvents)
             return;
+
+        if (aiTurnInProgress || (aiAutoPlayEnabled && !aiAutoPlayPaused))
+        {
+            RefreshUi();
+            return;
+        }
 
         if (MoveHistoryList.SelectedIndex < 0)
             return;

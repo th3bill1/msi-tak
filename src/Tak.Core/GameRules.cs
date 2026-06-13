@@ -145,23 +145,27 @@ public static class GameRules
         if (validSquares.Count == 0)
             yield break;
 
-        // Generate all valid distributions
+        // Generate all valid distributions up to the farthest reachable square.
         foreach (var distribution in GenerateDistributions(piecesToMove, validSquares.Count))
         {
-            var targetPos = validSquares[validSquares.Count - 1];
+            var targetPos = validSquares[distribution.Length - 1];
             yield return new SlideMove(from, targetPos, dir, distribution);
         }
     }
 
-    /// <summary>Generate all valid drop distributions for N pieces across K squares</summary>
-    private static IEnumerable<int[]> GenerateDistributions(int pieces, int squares)
+    /// <summary>Generate all valid drop distributions for N pieces across up to K squares.</summary>
+    private static IEnumerable<int[]> GenerateDistributions(int pieces, int maxSquares)
     {
-        if (squares < 1 || pieces < 1 || pieces > squares)
+        if (maxSquares < 1 || pieces < 1)
             yield break;
 
-        foreach (var dist in GenerateAllDistributions(pieces, squares))
+        var maxDrops = Math.Min(pieces, maxSquares);
+        for (int dropSquares = 1; dropSquares <= maxDrops; dropSquares++)
         {
-            yield return dist;
+            foreach (var dist in GenerateAllDistributions(pieces, dropSquares))
+            {
+                yield return dist;
+            }
         }
     }
 

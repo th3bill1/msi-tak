@@ -123,6 +123,7 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
 
                                     <TextBlock Text="Board size" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
@@ -132,24 +133,36 @@
                                         <ComboBoxItem Content="6x6" />
                                     </ComboBox>
 
-                                    <TextBlock Text="Your color" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
-                                    <ComboBox x:Name="PlayerColorCombo" Grid.Row="1" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectedIndex="0">
-                                        <ComboBoxItem Content="White" />
-                                        <ComboBoxItem Content="Black" />
-                                    </ComboBox>
-
-                                    <TextBlock Text="Opponent" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,0" />
-                                    <ComboBox x:Name="OpponentCombo" Grid.Row="2" Grid.Column="1" Height="28" SelectedIndex="1">
-                                        <ComboBoxItem Content="Random" />
-                                        <ComboBoxItem Content="Heuristic" />
-                                        <ComboBoxItem Content="UCT" />
+                                    <TextBlock Text="White" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="WhiteControllerCombo" Grid.Row="1" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectedIndex="0">
+                                        <ComboBoxItem Content="Human" />
+                                        <ComboBoxItem Content="Random AI" />
+                                        <ComboBoxItem Content="Heuristic AI" />
+                                        <ComboBoxItem Content="MCTS" />
                                         <ComboBoxItem Content="RAVE" />
                                         <ComboBoxItem Content="Progressive Widening" />
+                                    </ComboBox>
+
+                                    <TextBlock Text="Black" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="BlackControllerCombo" Grid.Row="2" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectedIndex="2">
+                                        <ComboBoxItem Content="Human" />
+                                        <ComboBoxItem Content="Random AI" />
+                                        <ComboBoxItem Content="Heuristic AI" />
+                                        <ComboBoxItem Content="MCTS" />
+                                        <ComboBoxItem Content="RAVE" />
+                                        <ComboBoxItem Content="Progressive Widening" />
+                                    </ComboBox>
+
+                                    <TextBlock Text="AI speed" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,0" />
+                                    <ComboBox x:Name="AiSpeedCombo" Grid.Row="3" Grid.Column="1" Height="28" SelectedIndex="1">
+                                        <ComboBoxItem Content="Slow" />
+                                        <ComboBoxItem Content="Normal" />
+                                        <ComboBoxItem Content="Fast" />
                                     </ComboBox>
                                 </Grid>
 
                                 <Button x:Name="NewGameBtn"
-                                        Content="Start New Game"
+                                        Content="Start Selected Game"
                                         Height="36"
                                         Margin="0,12,0,0"
                                         Click="NewGameBtn_Click"
@@ -157,6 +170,22 @@
                                         Foreground="White"
                                         FontWeight="Bold"
                                         BorderThickness="0" />
+
+                                <Button x:Name="StartAiVsAiBtn"
+                                        Content="Start AI vs AI"
+                                        Height="34"
+                                        Margin="0,8,0,0"
+                                        Click="StartAiVsAiBtn_Click"
+                                        Background="#7C3AED"
+                                        Foreground="White"
+                                        FontWeight="Bold"
+                                        BorderThickness="0" />
+
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button x:Name="PauseAiBtn" Content="Pause" Width="74" Height="32" Click="PauseAiBtn_Click" Background="#F59E0B" Foreground="White" BorderThickness="0" Margin="0,0,8,0" />
+                                    <Button x:Name="ResumeAiBtn" Content="Resume" Width="82" Height="32" Click="ResumeAiBtn_Click" Background="#16A34A" Foreground="White" BorderThickness="0" Margin="0,0,8,0" />
+                                    <Button x:Name="StepAiBtn" Content="Step" Width="74" Height="32" Click="StepAiBtn_Click" Background="#0EA5E9" Foreground="White" BorderThickness="0" />
+                                </StackPanel>
                             </StackPanel>
                         </Border>
 
@@ -279,7 +308,11 @@
                                     <Button x:Name="RestartBtn" Content="Restart" Width="82" Height="32" Click="RestartBtn_Click" Background="#334155" Foreground="White" BorderThickness="0" />
                                 </StackPanel>
 
-                                <ListBox x:Name="MoveHistoryList" Height="220" Margin="0,12,0,0" SelectionChanged="MoveHistoryList_SelectionChanged" />
+                                <ListBox x:Name="MoveHistoryList"
+                                         Height="220"
+                                         Margin="0,12,0,0"
+                                         IsHitTestVisible="False"
+                                         Focusable="False" />
                             </StackPanel>
                         </Border>
 

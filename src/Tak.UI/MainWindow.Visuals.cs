@@ -47,9 +47,25 @@ public partial class MainWindow
     private static bool IsLastMoveSquare(Move? move, Position position) => move switch
     {
         PlaceMove placeMove => placeMove.Position == position,
-        SlideMove slideMove => slideMove.From == position || slideMove.To == position,
+        SlideMove slideMove => IsSlidePathSquare(slideMove, position),
         _ => false
     };
+
+    private static bool IsSlidePathSquare(SlideMove move, Position position)
+    {
+        if (move.From == position)
+            return true;
+
+        var current = move.From;
+        for (int step = 0; step < move.Distribution.Length; step++)
+        {
+            current = current.Offset(move.Direction);
+            if (current == position)
+                return true;
+        }
+
+        return false;
+    }
 
     private static string BuildLegalMoveSummary(GameState state)
     {

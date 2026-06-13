@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Threading;
 using Avalonia.Controls;
 using Tak.AI;
 using Tak.Core;
@@ -7,8 +8,10 @@ namespace Tak.UI;
 
 public partial class MainWindow
 {
-    private void StartNewGame()
+    private void StartNewGame(bool startAutoPlay = false)
     {
+        StopAiLoop();
+
         int boardSize = BoardSizeCombo.SelectedIndex switch
         {
             0 => 4,
@@ -17,19 +20,20 @@ public partial class MainWindow
             _ => 5
         };
 
-        humanPlayer = PlayerColorCombo.SelectedIndex == 0 ? Player.White : Player.Black;
+        var whiteController = GetSelectedController(WhiteControllerCombo);
+        var blackController = GetSelectedController(BlackControllerCombo);
+        humanPlayer = whiteController == PlayerController.Human
+            ? Player.White
+            : blackController == PlayerController.Human
+                ? Player.Black
+                : Player.None;
 
-        string opponentName = OpponentCombo.SelectedIndex switch
-        {
-            0 => "random",
-            1 => "heuristic",
-            2 => "uct",
-            3 => "rave",
-            4 => "pw",
-            _ => "heuristic"
-        };
-
-        aiAgent = CreateAgent(opponentName, seed: 42);
+        whiteAgent = CreateAgent(whiteController, seed: 42);
+        blackAgent = CreateAgent(blackController, seed: 43);
+        aiAgent = humanPlayer == Player.White ? blackAgent : whiteAgent;
+        aiAutoPlayEnabled = startAutoPlay || (whiteController != PlayerController.Human && blackController != PlayerController.Human);
+        aiAutoPlayPaused = false;
+        aiStepRequested = false;
 
         var newGame = Utils.CreateNewGame(boardSize);
         stateTimeline.Clear();
@@ -40,6 +44,17 @@ public partial class MainWindow
 
         CreateBoardUI(boardSize);
         RefreshUi();
+    }
+
+    private void StartAiVsAiGame()
+    {
+        if (GetSelectedController(WhiteControllerCombo) == PlayerController.Human)
+            WhiteControllerCombo.SelectedIndex = 2;
+
+        if (GetSelectedController(BlackControllerCombo) == PlayerController.Human)
+            BlackControllerCombo.SelectedIndex = 4;
+
+        StartNewGame(startAutoPlay: true);
     }
 
     private void JumpToLiveState()
@@ -119,12 +134,12 @@ public partial class MainWindow
                 : $"{state.CurrentPlayer} to move";
             HeaderStatusText.Text = isReviewing
                 ? "Use undo, redo, or the history list to inspect previous turns."
-                : state.CurrentPlayer == humanPlayer
+                : IsHumanController(state.CurrentPlayer)
                     ? "Your turn. Legal squares are highlighted on the board."
-                    : $"{aiAgent?.Name ?? "AI"} is thinking.";
+                    : $"{GetPlayerDisplayName(state.CurrentPlayer)} is thinking.";
             BoardHintText.Text = isReviewing
                 ? "Review mode is read-only. Return to live to continue the game."
-                : state.CurrentPlayer == humanPlayer
+                : IsHumanController(state.CurrentPlayer)
                     ? GetMoveBuilderMode() == MoveBuilderMode.Placement
                         ? "Click a highlighted square to submit the selected placement."
                         : "Select a source stack, then choose direction, carry count, and drop pattern."
@@ -147,21 +162,42 @@ public partial class MainWindow
         {
             suppressUiEvents = true;
             MoveHistoryList.Items.Clear();
-            suppressUiEvents = false;
             MoveHistoryList.SelectedIndex = -1;
+            suppressUiEvents = false;
             return;
         }
 
         suppressUiEvents = true;
-        MoveHistoryList.Items.Clear();
-
-        for (int index = 0; index < gameState.MoveHistory.Count; index++)
+        try
         {
-            MoveHistoryList.Items.Add(FormatHistoryEntry(stateTimeline[index], gameState.MoveHistory[index], index));
-        }
+            MoveHistoryList.Items.Clear();
 
-        MoveHistoryList.SelectedIndex = stateIndex <= 0 ? -1 : stateIndex - 1;
-        suppressUiEvents = false;
+            var historyState = stateTimeline.Count > 0 ? stateTimeline[^1] : gameState;
+            var moveCount = Math.Min(historyState.MoveHistory.Count, Math.Max(0, stateTimeline.Count - 1));
+
+            for (int index = 0; index < moveCount; index++)
+            {
+                MoveHistoryList.Items.Add(FormatHistoryEntry(stateTimeline[index], historyState.MoveHistory[index], index));
+            }
+
+            var desiredSelectedIndex = stateIndex > 0 && stateIndex <= moveCount ? stateIndex - 1 : -1;
+            if (MoveHistoryList.SelectedIndex != desiredSelectedIndex)
+            {
+                suppressHistorySelectionEvents = true;
+                try
+                {
+                    MoveHistoryList.SelectedIndex = desiredSelectedIndex;
+                }
+                finally
+                {
+                    suppressHistorySelectionEvents = false;
+                }
+            }
+        }
+        finally
+        {
+            suppressUiEvents = false;
+        }
     }
 
     private void UpdateResultOverlay()
@@ -204,34 +240,134 @@ public partial class MainWindow
 
     private async System.Threading.Tasks.Task MaybePlayAiTurnAsync()
     {
-        if (aiTurnInProgress || CurrentState == null || aiAgent == null || !IsLiveState || CurrentState.Result != null || CurrentState.CurrentPlayer == humanPlayer)
+        if (aiAutoPlayEnabled)
+        {
+            await StartAiLoopAsync();
+            return;
+        }
+
+        if (CurrentState == null || !IsLiveState || CurrentState.Result != null || IsHumanController(CurrentState.CurrentPlayer))
+            return;
+
+        await ExecuteSingleAiTurnAsync(CancellationToken.None);
+    }
+
+    private async System.Threading.Tasks.Task StartAiLoopAsync()
+    {
+        if (aiAutoLoopRunning)
+            return;
+
+        aiLoopCancellation?.Cancel();
+        aiLoopCancellation?.Dispose();
+        aiLoopCancellation = new CancellationTokenSource();
+        var token = aiLoopCancellation.Token;
+        aiAutoLoopRunning = true;
+
+        try
+        {
+            while (!token.IsCancellationRequested && aiAutoPlayEnabled && CurrentState != null && IsLiveState && CurrentState.Result == null)
+            {
+                if (aiAutoPlayPaused && !aiStepRequested)
+                {
+                    await System.Threading.Tasks.Task.Delay(100, token);
+                    continue;
+                }
+
+                if (IsHumanController(CurrentState.CurrentPlayer))
+                {
+                    aiAutoPlayEnabled = false;
+                    break;
+                }
+
+                aiStepRequested = false;
+                await ExecuteSingleAiTurnAsync(token);
+
+                if (CurrentState?.Result != null)
+                {
+                    aiAutoPlayEnabled = false;
+                    break;
+                }
+
+                if (!aiStepRequested)
+                    await System.Threading.Tasks.Task.Delay(GetAiMoveDelay(), token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when restarting or pausing through cancellation.
+        }
+        finally
+        {
+            aiAutoLoopRunning = false;
+            UpdateControlsState();
+        }
+    }
+
+    private async System.Threading.Tasks.Task ExecuteSingleAiTurnAsync(CancellationToken cancellationToken)
+    {
+        if (aiTurnInProgress || CurrentState == null || !IsLiveState || CurrentState.Result != null)
+            return;
+
+        var stateBeforeMove = CurrentState;
+        var agent = GetAgentForPlayer(stateBeforeMove.CurrentPlayer);
+        if (agent == null)
             return;
 
         aiTurnInProgress = true;
+        UpdateControlsState();
         try
         {
-            HeaderStatusText.Text = $"{aiAgent.Name} is thinking...";
-            var move = await System.Threading.Tasks.Task.Run(() => aiAgent.ChooseMove(CurrentState.Clone(), DefaultAiTimeLimit, DefaultAiIterationLimit));
+            HeaderStatusText.Text = $"{agent.Name} ({stateBeforeMove.CurrentPlayer}) is thinking...";
+            var move = await System.Threading.Tasks.Task.Run(() => agent.ChooseMove(stateBeforeMove.Clone(), DefaultAiTimeLimit, DefaultAiIterationLimit), cancellationToken);
 
-            if (CurrentState == null || !IsLiveState || CurrentState.Result != null || CurrentState.CurrentPlayer == humanPlayer)
+            if (cancellationToken.IsCancellationRequested || CurrentState != stateBeforeMove || !IsLiveState || CurrentState.Result != null)
                 return;
 
-            ExecuteMove(move);
+            var legalMoves = GameRules.GetLegalMoves(CurrentState).ToList();
+            var matchedMove = legalMoves.FirstOrDefault(legalMove => AreEquivalentMoves(legalMove, move));
+            if (matchedMove == null)
+            {
+                StopAiLoop();
+                StatusTextMessage($"{agent.Name} returned an illegal move: {FormatMove(move)}");
+                return;
+            }
+
+            ExecuteMove(matchedMove);
+            HeaderStatusText.Text = $"{agent.Name} played {FormatMove(matchedMove)}";
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            StopAiLoop();
+            StatusTextMessage($"{agent.Name} failed: {ex.Message}");
         }
         finally
         {
             aiTurnInProgress = false;
+            UpdateControlsState();
         }
     }
 
     private void UpdateControlsState()
     {
-        var interactive = IsLiveHumanTurn;
+        var interactive = IsLiveHumanTurn && !aiTurnInProgress && !aiAutoPlayEnabled;
+        var hasGame = CurrentState != null;
+        var aiVsAiConfigured = GetSelectedController(WhiteControllerCombo) != PlayerController.Human && GetSelectedController(BlackControllerCombo) != PlayerController.Human;
+        var canControlAi = hasGame && CurrentState?.Result == null && !IsLiveHumanTurn;
+
+        BoardSizeCombo.IsEnabled = !aiTurnInProgress && !aiAutoPlayEnabled;
+        WhiteControllerCombo.IsEnabled = !aiTurnInProgress && !aiAutoPlayEnabled;
+        BlackControllerCombo.IsEnabled = !aiTurnInProgress && !aiAutoPlayEnabled;
+        AiSpeedCombo.IsEnabled = true;
+        NewGameBtn.IsEnabled = !aiTurnInProgress;
+        StartAiVsAiBtn.IsEnabled = !aiTurnInProgress;
+        PauseAiBtn.IsEnabled = aiAutoPlayEnabled && !aiAutoPlayPaused;
+        ResumeAiBtn.IsEnabled = canControlAi && aiAutoPlayPaused;
+        StepAiBtn.IsEnabled = canControlAi && !aiTurnInProgress && (!aiAutoPlayEnabled || aiAutoPlayPaused || aiVsAiConfigured);
         MoveModeCombo.IsEnabled = interactive;
         PieceTypeCombo.IsEnabled = interactive && GetMoveBuilderMode() == MoveBuilderMode.Placement;
         ClearSelectionBtn.IsEnabled = interactive && GetMoveBuilderMode() == MoveBuilderMode.Slide;
-        UndoBtn.IsEnabled = stateIndex > 0;
-        RedoBtn.IsEnabled = stateIndex < stateTimeline.Count - 1;
+        UndoBtn.IsEnabled = stateIndex > 0 && !aiTurnInProgress && (!aiAutoPlayEnabled || aiAutoPlayPaused);
+        RedoBtn.IsEnabled = stateIndex < stateTimeline.Count - 1 && !aiTurnInProgress && (!aiAutoPlayEnabled || aiAutoPlayPaused);
         LiveBtn.IsEnabled = stateTimeline.Count > 0;
         RestartBtn.IsEnabled = true;
         SubmitMoveBtn.IsEnabled = interactive && GetMoveBuilderMode() == MoveBuilderMode.Slide && TryBuildSelectedSlideMove(CurrentState!) != null;
@@ -243,16 +379,77 @@ public partial class MainWindow
         BoardHintText.Text = message;
     }
 
-    private static IAgent CreateAgent(string agentName, int? seed = null, double explorationConstant = 1.414)
+    private bool IsHumanController(Player player)
     {
-        return agentName.ToLowerInvariant() switch
+        return player switch
         {
-            "random" => new RandomAgent(seed),
-            "heuristic" => new HeuristicAgent(seed),
-            "uct" => new UctAgent(explorationConstant, seed),
-            "rave" => new RaveAgent(explorationConstant, seed),
-            "pw" => new ProgressiveWideningAgent(explorationConstant, seed: seed),
-            _ => throw new ArgumentException($"Unknown agent: {agentName}")
+            Player.White => GetSelectedController(WhiteControllerCombo) == PlayerController.Human,
+            Player.Black => GetSelectedController(BlackControllerCombo) == PlayerController.Human,
+            _ => false
         };
+    }
+
+    private IAgent? GetAgentForPlayer(Player player)
+    {
+        return player switch
+        {
+            Player.White => whiteAgent,
+            Player.Black => blackAgent,
+            _ => null
+        };
+    }
+
+    private string GetPlayerDisplayName(Player player)
+    {
+        var agent = GetAgentForPlayer(player);
+        return agent == null ? player.ToString() : $"{agent.Name} ({player})";
+    }
+
+    private static IAgent? CreateAgent(PlayerController controller, int? seed = null, double explorationConstant = 1.414)
+    {
+        return controller switch
+        {
+            PlayerController.Human => null,
+            PlayerController.Random => new RandomAgent(seed),
+            PlayerController.Heuristic => new HeuristicAgent(seed),
+            PlayerController.Uct => new UctAgent(explorationConstant, seed),
+            PlayerController.Rave => new RaveAgent(explorationConstant, seed),
+            PlayerController.ProgressiveWidening => new ProgressiveWideningAgent(explorationConstant, seed: seed),
+            _ => null
+        };
+    }
+
+    private static PlayerController GetSelectedController(ComboBox comboBox)
+    {
+        return comboBox.SelectedIndex switch
+        {
+            0 => PlayerController.Human,
+            1 => PlayerController.Random,
+            2 => PlayerController.Heuristic,
+            3 => PlayerController.Uct,
+            4 => PlayerController.Rave,
+            5 => PlayerController.ProgressiveWidening,
+            _ => PlayerController.Human
+        };
+    }
+
+    private TimeSpan GetAiMoveDelay()
+    {
+        return AiSpeedCombo.SelectedIndex switch
+        {
+            0 => TimeSpan.FromMilliseconds(1000),
+            2 => TimeSpan.FromMilliseconds(150),
+            _ => TimeSpan.FromMilliseconds(500)
+        };
+    }
+
+    private void StopAiLoop()
+    {
+        aiAutoPlayEnabled = false;
+        aiAutoPlayPaused = false;
+        aiStepRequested = false;
+        aiLoopCancellation?.Cancel();
+        aiLoopCancellation?.Dispose();
+        aiLoopCancellation = null;
     }
 }
