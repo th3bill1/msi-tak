@@ -1,0 +1,337 @@
+<Window x:Class="Tak.UI.MainWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tak UI"
+        WindowState="Maximized"
+        MinWidth="1010"
+        MinHeight="800"
+        Background="#0F172A"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Panel>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}" />
+                        <Border Name="HoverOverlay"
+                                Background="#1AFFFFFF"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                IsVisible="False" />
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Panel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button:pointerover /template/ Border#HoverOverlay">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="Button:pressed /template/ Border#HoverOverlay">
+            <Setter Property="Background" Value="#22000000" />
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="Button:disabled">
+            <Setter Property="Opacity" Value="0.55" />
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Padding="18"
+                CornerRadius="18"
+                Background="#111827"
+                BorderBrush="#334155"
+                BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Tak" FontSize="34" FontWeight="Bold" Foreground="#F8FAFC" />
+                    <TextBlock Text="Legal move builder, live AI play, and move review." FontSize="13" Foreground="#94A3B8" Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                    <TextBlock x:Name="HeaderTurnText" Text="No game in progress" FontSize="18" FontWeight="SemiBold" Foreground="#E2E8F0" HorizontalAlignment="Right" />
+                    <TextBlock x:Name="HeaderStatusText" Text="Start a new game to begin." FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="0,4,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Padding="16"
+                    CornerRadius="18"
+                    Background="#F8FAFC"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Text="Board" FontSize="20" FontWeight="Bold" Foreground="#0F172A" />
+                        <TextBlock x:Name="BoardHintText" Text="Click a legal square to place, or select a source stack for a slide." FontSize="12" Foreground="#475569" Margin="0,4,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Border Margin="0,14,0,0"
+                            Padding="12"
+                            CornerRadius="16"
+                            Background="#E2E8F0"
+                            BorderBrush="#CBD5E1"
+                            BorderThickness="1">
+                        <UniformGrid x:Name="BoardGrid" Columns="5" Rows="5" Width="500" Height="500" />
+                    </Border>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Padding="16"
+                    CornerRadius="18"
+                    Background="#FFFFFF"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <WrapPanel Orientation="Horizontal" ItemWidth="360" HorizontalAlignment="Left">
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
+                            <StackPanel>
+                                <TextBlock Text="Setup" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Board size" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="BoardSizeCombo" Grid.Row="0" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectedIndex="1">
+                                        <ComboBoxItem Content="4x4" />
+                                        <ComboBoxItem Content="5x5" />
+                                        <ComboBoxItem Content="6x6" />
+                                    </ComboBox>
+
+                                    <TextBlock Text="Your color" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="PlayerColorCombo" Grid.Row="1" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectedIndex="0">
+                                        <ComboBoxItem Content="White" />
+                                        <ComboBoxItem Content="Black" />
+                                    </ComboBox>
+
+                                    <TextBlock Text="Opponent" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,0" />
+                                    <ComboBox x:Name="OpponentCombo" Grid.Row="2" Grid.Column="1" Height="28" SelectedIndex="1">
+                                        <ComboBoxItem Content="Random" />
+                                        <ComboBoxItem Content="Heuristic" />
+                                        <ComboBoxItem Content="UCT" />
+                                        <ComboBoxItem Content="RAVE" />
+                                        <ComboBoxItem Content="Progressive Widening" />
+                                    </ComboBox>
+                                </Grid>
+
+                                <Button x:Name="NewGameBtn"
+                                        Content="Start New Game"
+                                        Height="36"
+                                        Margin="0,12,0,0"
+                                        Click="NewGameBtn_Click"
+                                        Background="#2563EB"
+                                        Foreground="White"
+                                        FontWeight="Bold"
+                                        BorderThickness="0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
+                            <StackPanel>
+                                <TextBlock Text="Game Info" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
+                                <UniformGrid Columns="2" Margin="0,10,0,0">
+                                    <StackPanel Margin="0,0,8,10">
+                                        <TextBlock Text="Current player" Foreground="#64748B" FontSize="11" />
+                                        <TextBlock x:Name="CurrentPlayerText" Text="-" FontSize="18" FontWeight="Bold" Foreground="#0F172A" />
+                                    </StackPanel>
+                                    <StackPanel Margin="8,0,0,10">
+                                        <TextBlock Text="Mode" Foreground="#64748B" FontSize="11" />
+                                        <TextBlock x:Name="LiveStateText" Text="-" FontSize="18" FontWeight="Bold" Foreground="#0F172A" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,8,10">
+                                        <TextBlock Text="Move count" Foreground="#64748B" FontSize="11" />
+                                        <TextBlock x:Name="MoveCountText" Text="0" FontSize="18" FontWeight="Bold" Foreground="#0F172A" />
+                                    </StackPanel>
+                                    <StackPanel Margin="8,0,0,10">
+                                        <TextBlock Text="Result" Foreground="#64748B" FontSize="11" />
+                                        <TextBlock x:Name="ResultSummaryText" Text="-" FontSize="18" FontWeight="Bold" Foreground="#0F172A" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </UniformGrid>
+
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,8,0">
+                                        <TextBlock Text="White reserves" Foreground="#64748B" FontSize="11" />
+                                        <TextBlock x:Name="WhiteReserveText" Text="-" FontSize="12" Foreground="#0F172A" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="WhiteCoverageText" Text="-" FontSize="12" Foreground="#0F172A" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <TextBlock Text="Black reserves" Foreground="#64748B" FontSize="11" />
+                                        <TextBlock x:Name="BlackReserveText" Text="-" FontSize="12" Foreground="#0F172A" TextWrapping="Wrap" />
+                                        <TextBlock x:Name="BlackCoverageText" Text="-" FontSize="12" Foreground="#0F172A" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="Last move" Foreground="#64748B" FontSize="11" Margin="0,10,0,0" />
+                                <TextBlock x:Name="LastMoveText" Text="-" FontSize="12" Foreground="#0F172A" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
+                            <StackPanel>
+                                <TextBlock Text="Move Builder" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
+
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="Move type" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="MoveModeCombo" Grid.Row="0" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectedIndex="0" SelectionChanged="MoveModeCombo_SelectionChanged">
+                                        <ComboBoxItem Content="Placement" />
+                                        <ComboBoxItem Content="Slide" />
+                                    </ComboBox>
+
+                                    <TextBlock Text="Placement type" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="PieceTypeCombo" Grid.Row="1" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectionChanged="PieceTypeCombo_SelectionChanged" />
+
+                                    <TextBlock Text="Slide source" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <TextBlock x:Name="SlideSourceText" Grid.Row="2" Grid.Column="1" Text="None selected" VerticalAlignment="Center" Foreground="#0F172A" Margin="0,0,0,10" />
+
+                                    <TextBlock Text="Direction" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="SlideDirectionCombo" Grid.Row="3" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectionChanged="SlideSelection_Changed" />
+
+                                    <TextBlock Text="Carry count" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,10" />
+                                    <ComboBox x:Name="SlideCarryCombo" Grid.Row="4" Grid.Column="1" Height="28" Margin="0,0,0,10" SelectionChanged="SlideSelection_Changed" />
+
+                                    <TextBlock Text="Drop pattern" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Foreground="#334155" Margin="0,0,10,0" />
+                                    <ComboBox x:Name="SlideDistributionCombo" Grid.Row="5" Grid.Column="1" Height="28" SelectionChanged="SlideSelection_Changed" />
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Button x:Name="SubmitMoveBtn"
+                                            Content="Submit Slide"
+                                            Width="120"
+                                            Height="34"
+                                            Click="SubmitMoveBtn_Click"
+                                            Background="#16A34A"
+                                            Foreground="White"
+                                            FontWeight="Bold"
+                                            BorderThickness="0"
+                                            Margin="0,0,8,0" />
+                                    <Button x:Name="ClearSelectionBtn"
+                                            Content="Clear Selection"
+                                            Width="124"
+                                            Height="34"
+                                            Click="ClearSelectionBtn_Click"
+                                            Background="#E2E8F0"
+                                            Foreground="#0F172A"
+                                            BorderThickness="0" />
+                                </StackPanel>
+
+                                <TextBlock x:Name="HelpText" Text="Placement moves are submitted by clicking a highlighted square. Slide moves use the controls above, then Submit Slide." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,10,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
+                            <StackPanel>
+                                <TextBlock Text="Move Review" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button x:Name="UndoBtn" Content="Undo" Width="74" Height="32" Click="UndoBtn_Click" Background="#F59E0B" Foreground="White" BorderThickness="0" Margin="0,0,8,0" />
+                                    <Button x:Name="RedoBtn" Content="Redo" Width="74" Height="32" Click="RedoBtn_Click" Background="#F97316" Foreground="White" BorderThickness="0" Margin="0,0,8,0" />
+                                    <Button x:Name="LiveBtn" Content="Live" Width="74" Height="32" Click="LiveBtn_Click" Background="#0EA5E9" Foreground="White" BorderThickness="0" Margin="0,0,8,0" />
+                                    <Button x:Name="RestartBtn" Content="Restart" Width="82" Height="32" Click="RestartBtn_Click" Background="#334155" Foreground="White" BorderThickness="0" />
+                                </StackPanel>
+
+                                <ListBox x:Name="MoveHistoryList" Height="220" Margin="0,12,0,0" SelectionChanged="MoveHistoryList_SelectionChanged" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="14" CornerRadius="14" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" Margin="0,0,12,12">
+                            <StackPanel>
+                                <TextBlock Text="Legal Moves" FontSize="16" FontWeight="Bold" Foreground="#0F172A" />
+                                <TextBlock x:Name="LegalMovesText" Text="-" FontSize="12" Foreground="#334155" TextWrapping="Wrap" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <Border x:Name="ResultOverlay"
+                Grid.RowSpan="2"
+                Background="#990F172A"
+                IsVisible="False">
+            <Border Width="336"
+                    Padding="24"
+                    CornerRadius="20"
+                    Background="#FFFFFF"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Game Complete" FontSize="28" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="ResultText" Text="-" FontSize="18" FontWeight="SemiBold" Foreground="#1D4ED8" Margin="0,12,0,0" TextAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock x:Name="ResultDetailText" Text="-" FontSize="12" Foreground="#475569" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+                        <Button x:Name="ReplayBtn"
+                                Content="Replay"
+                                Width="110"
+                                Height="36"
+                                Click="ReplayBtn_Click"
+                                Background="#2563EB"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Margin="0,0,8,0" />
+                        <Button x:Name="ResumeBtn"
+                                Content="Return to board"
+                                Width="130"
+                                Height="36"
+                                Click="ResumeBtn_Click"
+                                Background="#E2E8F0"
+                                Foreground="#0F172A"
+                                BorderThickness="0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

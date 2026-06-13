@@ -19,7 +19,7 @@ public static class Utils
     public static string FormatMove(Move move) => move switch
     {
         PlaceMove pm => $"Place {pm.PieceType} at {pm.Position}",
-        SlideMove sm => $"Slide {sm.From} → {sm.To} ({sm.PiecesCarried} pieces)",
+        SlideMove sm => $"Slide {sm.From} -> {sm.To} carrying {sm.PiecesCarried} [{string.Join(",", sm.Distribution)}]",
         _ => "Unknown move"
     };
 
