@@ -31,8 +31,11 @@ public class MctsTree
                 node = child;
         }
 
-        // Simulation
-        double reward = Simulation(node);
+        // Simulation - reward is from the perspective of the player who moved INTO `node`.
+        // If `node` is the root (no parent), there is no "last mover", so we evaluate from
+        // the current player's perspective; root statistics aren't used for move selection anyway.
+        Player mover = node.Parent?.State.CurrentPlayer ?? node.State.CurrentPlayer;
+        double reward = Simulation(node, mover);
 
         // Backpropagation
         node.Backpropagate(reward);
@@ -51,8 +54,8 @@ public class MctsTree
         return node;
     }
 
-    /// <summary>Simulation phase - random playout</summary>
-    private double Simulation(MctsNode node)
+    /// <summary>Simulation phase - random playout from `node`, returning reward from `perspective`'s POV</summary>
+    private double Simulation(MctsNode node, Player perspective)
     {
         var state = node.State.Clone();
 
@@ -66,18 +69,18 @@ public class MctsTree
             state = state.MakeMove(move);
         }
 
-        return EvaluateTerminalState(state, root.State.CurrentPlayer);
+        return EvaluateTerminalState(state, perspective);
     }
 
-    private double EvaluateTerminalState(GameState state, Player rootPlayer)
+    private double EvaluateTerminalState(GameState state, Player perspective)
     {
         if (state.Result == null)
-            return 0.0; // Shouldn't happen
+            return 0.5; // No result (e.g. stalemate at depth limit) — treat as draw
 
         if (state.Result.Type == ResultType.Draw)
             return 0.5;
 
-        return state.Result.Winner == rootPlayer ? 1.0 : 0.0;
+        return state.Result.Winner == perspective ? 1.0 : 0.0;
     }
 
     /// <summary>Choose best move (most visited child)</summary>
