@@ -19,6 +19,24 @@ public class Program
 
             var config = new GameConfig(options.BoardSize);
 
+            if (options.Suite == "all-pairs")
+            {
+                var suite = new AllPairsSuite(
+                    config,
+                    options.AgentNames,
+                    options.GamesPerPair,
+                    options.IterationLimit,
+                    ExperimentCli.ToMoveTimeLimit(options.MoveTimeLimitMs),
+                    options.Seed,
+                    options.OutputPath,
+                    options.Exploration,
+                    options.IncludeSelfPlay,
+                    options.Resume);
+
+                suite.Run();
+                return 0;
+            }
+
             var whiteSpec = new AgentSpec(
                 options.WhiteAgent,
                 seed => AgentFactory.CreateAgent(options.WhiteAgent, seed, options.Exploration));

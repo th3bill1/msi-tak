@@ -3,10 +3,15 @@ namespace Tak.Experiments;
 using System.Globalization;
 
 public sealed record ExperimentOptions(
+    string Suite,
     int BoardSize,
     string WhiteAgent,
     string BlackAgent,
     int Games,
+    int GamesPerPair,
+    IReadOnlyList<string> AgentNames,
+    bool IncludeSelfPlay,
+    bool Resume,
     int IterationLimit,
     int MoveTimeLimitMs,
     int Seed,
@@ -22,16 +27,22 @@ public static class ExperimentCli
     /// <summary>Parse experiment command-line arguments into a validated options record.</summary>
     public static ExperimentOptions Parse(string[] args)
     {
-        int boardSize = 4;
+        string? suite = null;
+        int? boardSize = null;
         string whiteAgent = "random";
         string blackAgent = "heuristic";
-        int games = 2;
-        int iterationLimit = 100;
-        int moveTimeLimitMs = 50;
-        int seed = Random.Shared.Next();
+        int? games = null;
+        int? gamesPerPair = null;
+        int? iterationLimit = null;
+        int? moveTimeLimitMs = null;
+        int? seed = null;
         double exploration = 1.414;
-        string outputPath = "results/tournament.csv";
+        string? outputPath = null;
+        IReadOnlyList<string>? agentNames = null;
+        bool includeSelfPlay = false;
+        bool resume = false;
         bool helpRequested = false;
+        bool sawSingleMatchOption = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -44,6 +55,9 @@ public static class ExperimentCli
                 case "/?":
                     helpRequested = true;
                     break;
+                case "--suite":
+                    suite = ParseValue(args, ref i, argument).Trim().ToLowerInvariant();
+                    break;
                 case "--board":
                 case "--board-size":
                     boardSize = ParsePositiveInt(args, ref i, argument);
@@ -51,13 +65,29 @@ public static class ExperimentCli
                 case "--white":
                 case "--agent-a":
                     whiteAgent = ParseValue(args, ref i, argument);
+                    sawSingleMatchOption = true;
                     break;
                 case "--black":
                 case "--agent-b":
                     blackAgent = ParseValue(args, ref i, argument);
+                    sawSingleMatchOption = true;
                     break;
                 case "--games":
                     games = ParsePositiveInt(args, ref i, argument);
+                    sawSingleMatchOption = true;
+                    break;
+                case "--games-per-pair":
+                    gamesPerPair = ParsePositiveInt(args, ref i, argument);
+                    break;
+                case "--agents":
+                    agentNames = ParseAgentList(ParseValue(args, ref i, argument));
+                    break;
+                case "--include-self-play":
+                    includeSelfPlay = true;
+                    break;
+                case "--resume":
+                case "--append":
+                    resume = true;
                     break;
                 case "--iterations":
                     iterationLimit = ParseNonNegativeInt(args, ref i, argument);
@@ -72,23 +102,40 @@ public static class ExperimentCli
                     exploration = ParseDouble(args, ref i, argument);
                     break;
                 case "--output":
-                    outputPath = ParseValue(args, ref i, argument);
+                    outputPath = ParseOutputPath(args, ref i, argument);
                     break;
                 default:
                     throw new ArgumentException($"Unknown argument: {argument}");
             }
         }
 
+        var effectiveSuite = suite ?? (sawSingleMatchOption ? "single" : "all-pairs");
+        if (effectiveSuite is not "single" and not "all-pairs")
+            throw new ArgumentException($"Unknown suite name: {effectiveSuite}. Supported suites: single, all-pairs.");
+
+        var effectiveBoardSize = boardSize ?? (effectiveSuite == "all-pairs" ? 5 : 4);
+        _ = new Tak.Core.GameConfig(effectiveBoardSize);
+
+        var effectiveAgents = agentNames ?? AgentFactory.SupportedAgentNames;
+        effectiveAgents = effectiveAgents.Select(AgentFactory.NormalizeAgentName).ToArray();
+        _ = AgentFactory.NormalizeAgentName(whiteAgent);
+        _ = AgentFactory.NormalizeAgentName(blackAgent);
+
         return new ExperimentOptions(
-            boardSize,
+            effectiveSuite,
+            effectiveBoardSize,
             whiteAgent,
             blackAgent,
-            games,
-            iterationLimit,
-            moveTimeLimitMs,
-            seed,
+            games ?? 2,
+            gamesPerPair ?? 20,
+            effectiveAgents,
+            includeSelfPlay,
+            resume,
+            iterationLimit ?? (effectiveSuite == "all-pairs" ? 1000 : 100),
+            moveTimeLimitMs ?? (effectiveSuite == "all-pairs" ? 2000 : 50),
+            seed ?? Random.Shared.Next(),
             exploration,
-            outputPath,
+            outputPath ?? GetDefaultOutputPath(effectiveSuite),
             helpRequested);
     }
 
@@ -107,16 +154,24 @@ Usage:
   dotnet run --project src/Tak.Experiments -- [options]
 
 Options:
+  --suite <name>        Experiment suite: all-pairs or single (default: all-pairs, unless single-match options are used)
+  --games-per-pair <n>  Games per unordered pair for all-pairs; split evenly by color (default: 20)
+  --agents <list>       Comma-separated agents for all-pairs (default: all supported agents)
+  --include-self-play   Include Agent vs same Agent pairs in all-pairs
+  --resume, --append    Keep valid rows in --output and append only missing all-pairs games
   --games <n>           Total games to play, alternating colors (default: 2)
-  --board, --board-size  Board size: 4, 5, or 6 (default: 4)
+  --board, --board-size  Board size: 4, 5, or 6 (default: 5 for all-pairs, 4 for single)
   --white, --agent-a     White-side agent (default: random)
   --black, --agent-b     Black-side agent (default: heuristic)
   --iterations <n>      Iteration limit for search agents (default: 100)
   --move-time-ms <n>    Per-move time limit in milliseconds; use 0 for none (default: 50)
   --seed <n>            Base seed recorded per game (default: random)
   --exploration <n>     Exploration constant used by UCT-style agents (default: 1.414)
-  --output <path>       CSV output path (default: results/tournament.csv)
+  --output <path>       CSV output path (default: timestamped results/all_pairs_*.csv, or results/tournament.csv for single)
   --help                Show this help text
+
+All-pairs example:
+  dotnet run --project src/Tak.Experiments -- --suite all-pairs --games-per-pair 20 --board 5 --iterations 1000 --move-time-ms 2000
 
 Supported agents:
   {supportedAgents}
@@ -170,5 +225,42 @@ Supported agents:
 
         index++;
         return args[index];
+    }
+
+    private static string ParseOutputPath(string[] args, ref int index, string optionName)
+    {
+        var value = ParseValue(args, ref index, optionName);
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException($"{optionName} cannot be empty.");
+
+        if (value.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            throw new ArgumentException($"{optionName} contains invalid path characters: {value}");
+
+        return value;
+    }
+
+    private static IReadOnlyList<string> ParseAgentList(string value)
+    {
+        var agents = value
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(AgentFactory.NormalizeAgentName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (agents.Length == 0)
+            throw new ArgumentException("--agents must include at least one supported agent name.");
+
+        return agents;
+    }
+
+    private static string GetDefaultOutputPath(string suite)
+    {
+        if (suite == "all-pairs")
+        {
+            var stamp = DateTimeOffset.UtcNow.ToString("yyyyMMddTHHmmssZ", CultureInfo.InvariantCulture);
+            return Path.Combine("results", $"all_pairs_{stamp}.csv");
+        }
+
+        return Path.Combine("results", "tournament.csv");
     }
 }
