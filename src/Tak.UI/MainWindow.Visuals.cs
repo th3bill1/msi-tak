@@ -1,6 +1,7 @@
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Tak.Core;
 
 namespace Tak.UI;
@@ -58,7 +59,7 @@ public partial class MainWindow
         return $"{placementCount} placement moves, {slideCount} slide moves";
     }
 
-    private static UIElement BuildStackContent(Stack stack, Position position, bool legal, bool selected)
+    private static Control BuildStackContent(Stack stack, Position position, bool legal, bool selected)
     {
         if (stack.IsEmpty)
         {
@@ -114,7 +115,7 @@ public partial class MainWindow
         {
             Text = stack.TopPiece.Owner == Player.White ? "W" : "B",
             FontSize = 14,
-            FontWeight = FontWeights.Bold,
+            FontWeight = FontWeight.Bold,
             HorizontalAlignment = HorizontalAlignment.Left,
             Foreground = BuildStackForeground(stack, position, legal, selected)
         });
@@ -129,7 +130,7 @@ public partial class MainWindow
                 _ => "?"
             },
             FontSize = 10,
-            FontWeight = FontWeights.SemiBold,
+            FontWeight = FontWeight.SemiBold,
             HorizontalAlignment = HorizontalAlignment.Left,
             Foreground = BuildStackForeground(stack, position, legal, selected)
         });
@@ -153,7 +154,7 @@ public partial class MainWindow
         return parent;
     }
 
-    private static Brush BuildSquareBrush(Stack stack, Position position, bool legal, bool selected, bool lastMove)
+    private static IBrush BuildSquareBrush(Stack stack, Position position, bool legal, bool selected, bool lastMove)
     {
         // Chessboard base colors
         var light = Color.FromRgb(240, 217, 181);
@@ -180,7 +181,7 @@ public partial class MainWindow
         return new SolidColorBrush(baseColor);
     }
 
-    private static Brush BuildSquareBorderBrush(Stack stack, Position position, bool legal, bool selected, bool lastMove)
+    private static IBrush BuildSquareBorderBrush(Stack stack, Position position, bool legal, bool selected, bool lastMove)
     {
         if (selected)
             return new SolidColorBrush(Color.FromRgb(202, 138, 4));
@@ -194,7 +195,7 @@ public partial class MainWindow
         return stack.IsEmpty ? new SolidColorBrush(Color.FromRgb(203, 213, 225)) : new SolidColorBrush(Color.FromRgb(71, 85, 105));
     }
 
-    private static Brush BuildStackForeground(Stack stack, Position position, bool legal, bool selected)
+    private static IBrush BuildStackForeground(Stack stack, Position position, bool legal, bool selected)
     {
         // If the top piece is Black, text should be black; otherwise text should be white.
         if (!stack.IsEmpty && stack.TopPiece.Owner == Player.Black)
