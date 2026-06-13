@@ -1,6 +1,9 @@
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Tak.Core;
 
 namespace Tak.UI;
@@ -19,6 +22,7 @@ public partial class MainWindow
         BoardGrid.Width = FixedBoardPixels;
         BoardGrid.Height = FixedBoardPixels;
         boardButtons = new Button[size, size];
+        var buttonPixels = Math.Max(0, FixedBoardPixels / (double)size - 4);
 
         for (int row = 0; row < size; row++)
         {
@@ -31,9 +35,17 @@ public partial class MainWindow
                     BorderBrush = Brushes.SlateGray,
                     BorderThickness = new Thickness(1),
                     Margin = new Thickness(2),
-                    Padding = new Thickness(4),
+                    Padding = new Thickness(30, 20),
+                    Width = buttonPixels,
+                    Height = buttonPixels,
+                    MinWidth = buttonPixels,
+                    MinHeight = buttonPixels,
+                    MaxWidth = buttonPixels,
+                    MaxHeight = buttonPixels,
                     FontSize = 11,
                     FontFamily = new FontFamily("Consolas"),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch,
                     HorizontalContentAlignment = HorizontalAlignment.Center,
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Tag = new Position(row, col)
@@ -82,7 +94,7 @@ public partial class MainWindow
                 button.BorderBrush = BuildSquareBorderBrush(stack, position, isLegalSquare, isSelectedSource, isLastMoveSquare);
                 button.BorderThickness = new Thickness(isSelectedSource || isLastMoveSquare ? 3 : isLegalSquare ? 2 : 1);
                 button.Foreground = BuildStackForeground(stack, position, isLegalSquare, isSelectedSource);
-                button.ToolTip = BuildSquareToolTip(position, stack, isLegalSquare);
+                ToolTip.SetTip(button, BuildSquareToolTip(position, stack, isLegalSquare));
             }
         }
 

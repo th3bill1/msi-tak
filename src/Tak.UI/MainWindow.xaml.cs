@@ -1,10 +1,8 @@
 using System.Globalization;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Tak.AI;
 using Tak.Core;
-using Tak.Experiments;
 
 namespace Tak.UI;
 
@@ -26,6 +24,7 @@ public partial class MainWindow : Window
     private int stateIndex = -1;
     private bool suppressUiEvents;
     private bool aiTurnInProgress;
+    private bool resultOverlayDismissed;
     private Position? selectedSlideSource;
 
     public MainWindow()
@@ -43,37 +42,38 @@ public partial class MainWindow : Window
 
     private bool IsLiveHumanTurn => CurrentState != null && IsLiveState && CurrentState.Result == null && CurrentState.CurrentPlayer == humanPlayer;
 
-    private void NewGameBtn_Click(object sender, RoutedEventArgs e)
+    private void NewGameBtn_Click(object? sender, RoutedEventArgs e)
     {
         StartNewGame();
         _ = MaybePlayAiTurnAsync();
     }
 
-    private void ReplayBtn_Click(object sender, RoutedEventArgs e)
+    private void ReplayBtn_Click(object? sender, RoutedEventArgs e)
     {
         StartNewGame();
         _ = MaybePlayAiTurnAsync();
     }
 
-    private void RestartBtn_Click(object sender, RoutedEventArgs e)
+    private void RestartBtn_Click(object? sender, RoutedEventArgs e)
     {
         StartNewGame();
         _ = MaybePlayAiTurnAsync();
     }
 
-    private void ResumeBtn_Click(object sender, RoutedEventArgs e)
+    private void ResumeBtn_Click(object? sender, RoutedEventArgs e)
+    {
+        resultOverlayDismissed = true;
+        JumpToLiveState();
+        _ = MaybePlayAiTurnAsync();
+    }
+
+    private void LiveBtn_Click(object? sender, RoutedEventArgs e)
     {
         JumpToLiveState();
         _ = MaybePlayAiTurnAsync();
     }
 
-    private void LiveBtn_Click(object sender, RoutedEventArgs e)
-    {
-        JumpToLiveState();
-        _ = MaybePlayAiTurnAsync();
-    }
-
-    private void UndoBtn_Click(object sender, RoutedEventArgs e)
+    private void UndoBtn_Click(object? sender, RoutedEventArgs e)
     {
         if (stateIndex <= 0)
             return;
@@ -83,7 +83,7 @@ public partial class MainWindow : Window
         RefreshUi();
     }
 
-    private void RedoBtn_Click(object sender, RoutedEventArgs e)
+    private void RedoBtn_Click(object? sender, RoutedEventArgs e)
     {
         if (stateIndex < stateTimeline.Count - 1)
         {
@@ -93,7 +93,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void MoveHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void MoveHistoryList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (suppressUiEvents)
             return;
@@ -110,7 +110,7 @@ public partial class MainWindow : Window
         RefreshUi();
     }
 
-    private void MoveModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void MoveModeCombo_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (suppressUiEvents)
             return;
@@ -123,7 +123,7 @@ public partial class MainWindow : Window
         UpdateStatusPanel();
     }
 
-    private void PieceTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void PieceTypeCombo_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (suppressUiEvents)
             return;
@@ -132,7 +132,7 @@ public partial class MainWindow : Window
         UpdateStatusPanel();
     }
 
-    private void SlideSelection_Changed(object sender, SelectionChangedEventArgs e)
+    private void SlideSelection_Changed(object? sender, SelectionChangedEventArgs e)
     {
         if (suppressUiEvents)
             return;
@@ -141,13 +141,13 @@ public partial class MainWindow : Window
         UpdateStatusPanel();
     }
 
-    private void ClearSelectionBtn_Click(object sender, RoutedEventArgs e)
+    private void ClearSelectionBtn_Click(object? sender, RoutedEventArgs e)
     {
         selectedSlideSource = null;
         RefreshUi();
     }
 
-    private async void SubmitMoveBtn_Click(object sender, RoutedEventArgs e)
+    private async void SubmitMoveBtn_Click(object? sender, RoutedEventArgs e)
     {
         if (!IsLiveHumanTurn || CurrentState == null)
             return;
@@ -166,7 +166,7 @@ public partial class MainWindow : Window
         await MaybePlayAiTurnAsync();
     }
 
-    private async void BoardButton_Click(object sender, RoutedEventArgs e)
+    private async void BoardButton_Click(object? sender, RoutedEventArgs e)
     {
         if (!IsLiveHumanTurn || CurrentState == null || sender is not Button button || button.Tag is not Position position)
             return;

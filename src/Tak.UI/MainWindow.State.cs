@@ -1,9 +1,7 @@
 using System.Globalization;
-using System.Windows;
-using System.Windows.Controls;
+using Avalonia.Controls;
 using Tak.AI;
 using Tak.Core;
-using Tak.Experiments;
 
 namespace Tak.UI;
 
@@ -31,13 +29,14 @@ public partial class MainWindow
             _ => "heuristic"
         };
 
-        aiAgent = AgentFactory.CreateAgent(opponentName, seed: 42);
+        aiAgent = CreateAgent(opponentName, seed: 42);
 
         var newGame = Utils.CreateNewGame(boardSize);
         stateTimeline.Clear();
         stateTimeline.Add(newGame);
         stateIndex = 0;
         selectedSlideSource = null;
+        resultOverlayDismissed = false;
 
         CreateBoardUI(boardSize);
         RefreshUi();
@@ -82,7 +81,7 @@ public partial class MainWindow
             BlackReserveText.Text = "-";
             BlackCoverageText.Text = "-";
             LastMoveText.Text = "-";
-            ResultOverlay.Visibility = Visibility.Collapsed;
+            ResultOverlay.IsVisible = false;
             return;
         }
 
@@ -167,13 +166,13 @@ public partial class MainWindow
 
     private void UpdateResultOverlay()
     {
-        if (gameState?.Result == null || !IsLiveState)
+        if (gameState?.Result == null || !IsLiveState || resultOverlayDismissed)
         {
-            ResultOverlay.Visibility = Visibility.Collapsed;
+            ResultOverlay.IsVisible = false;
             return;
         }
 
-        ResultOverlay.Visibility = Visibility.Visible;
+        ResultOverlay.IsVisible = true;
         ResultText.Text = gameState.Result.ToString();
         ResultDetailText.Text = $"Winner: {gameState.Result.Winner} | Move count: {gameState.Result.MoveCount} | Type: {gameState.Result.Type}";
     }
@@ -198,6 +197,7 @@ public partial class MainWindow
         stateTimeline.Add(nextState);
         stateIndex = stateTimeline.Count - 1;
         selectedSlideSource = null;
+        resultOverlayDismissed = false;
         gameState = nextState;
         RefreshUi();
     }
@@ -241,5 +241,18 @@ public partial class MainWindow
     {
         HeaderStatusText.Text = message;
         BoardHintText.Text = message;
+    }
+
+    private static IAgent CreateAgent(string agentName, int? seed = null, double explorationConstant = 1.414)
+    {
+        return agentName.ToLowerInvariant() switch
+        {
+            "random" => new RandomAgent(seed),
+            "heuristic" => new HeuristicAgent(seed),
+            "uct" => new UctAgent(explorationConstant, seed),
+            "rave" => new RaveAgent(explorationConstant, seed),
+            "pw" => new ProgressiveWideningAgent(explorationConstant, seed: seed),
+            _ => throw new ArgumentException($"Unknown agent: {agentName}")
+        };
     }
 }
